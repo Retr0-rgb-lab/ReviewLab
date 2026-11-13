@@ -1,0 +1,5 @@
+node_modules
+docs
+AGENTS.md
+.env
+.env.local
