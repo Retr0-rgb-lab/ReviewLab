@@ -3,12 +3,14 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '../supabase.js'
+import { createCard, createFolder, renameCard, renameFolder } from './fileActions.js'
 
 export default function FileView() {
     const [folder, setFolder] = useState(null)
     const [items, setItems] = useState([])
     const [counts, setCounts] = useState({ folders: 0, cards: 0 })
     const [error, setError] = useState('')
+    const [draft, setDraft] = useState('')
 
     useEffect(() => {
         let cancelled = false
@@ -36,13 +38,78 @@ export default function FileView() {
         }
     }, [])
 
+    async function reload(nextFolder) {
+        await showFolder(nextFolder, setFolder, setItems, setCounts, setError)
+    }
+
+    async function onCreateFolder() {
+        const result = await createFolder(folder.id, draft)
+        if (result.error) {
+            setError(result.error)
+            return
+        }
+        setDraft('')
+        await reload(folder)
+    }
+
+    async function onRenameLevel() {
+        const result = await renameFolder(folder.id, draft)
+        if (result.error) {
+            setError(result.error)
+            return
+        }
+        setDraft('')
+        await reload({ id: folder.id, name: result.folder.name })
+    }
+
+    async function onCreateCard() {
+        const result = await createCard(folder.id)
+        if (result.error) {
+            setError(result.error)
+            return
+        }
+        await reload(folder)
+    }
+
+    async function onRenameItem(item) {
+        const result = item.kind === 'folder'
+            ? await renameFolder(item.id, draft)
+            : await renameCard(item.id, draft)
+        if (result.error) {
+            setError(result.error)
+            return
+        }
+        setDraft('')
+        await reload(folder)
+    }
+
     return (
         <main>
             <p>{error}</p>
             <h1>{folder ? folder.name : 'Current level'}</h1>
             <p>
-                {counts.folders} folders, {counts.cards} cards. 
+                {counts.folders} folders, {counts.cards} cards.
             </p>
+            <form
+                onSubmit={(event) => {
+                    event.preventDefault()
+                }}
+            >
+                <input
+                    value={draft}
+                    onChange={(event) => setDraft(event.target.value)}
+                    aria-label="Name"
+                />
+                <button type="button" onClick={onCreateFolder} disabled={!folder}>
+                    Create folder
+                </button>
+                <button type="button" onClick={onRenameLevel} disabled={!folder}>
+                    Rename this level
+                </button>
+                <button type="button" onClick={onCreateCard} disabled={!folder}>
+                    Create card
+                </button>
+            </form>
             <ul>
                 {items.map((item) => (
                     <li key={`${item.kind}-${item.id}`}>
@@ -53,6 +120,9 @@ export default function FileView() {
                             }
                         >
                             {labelFor(item)}
+                        </button>
+                        <button type="button" onClick={() => onRenameItem(item)} disabled={!folder}>
+                            Rename
                         </button>
                     </li>
                 ))}
