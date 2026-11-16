@@ -1,0 +1,15 @@
+.file-view {
+    position: relative;
+    min-height: 100vh;
+}
+
+.file-view > .file-view__background {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+}
+
+.file-view__content {
+    position: relative;
+    z-index: 1;
+}
