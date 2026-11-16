@@ -4,6 +4,8 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../supabase.js'
 import { createCard, createFolder, renameCard, renameFolder } from './fileActions.js'
+import CardTile from '../components/CardTile.jsx'
+import DotGrid from '../components/react-bits/DotGrid.jsx'
 
 export default function FileView() {
     const [folder, setFolder] = useState(null)
@@ -84,51 +86,57 @@ export default function FileView() {
     }
 
     return (
-        <main>
-            <p>{error}</p>
-            <h1>{folder ? folder.name : 'Current level'}</h1>
-            <p>
-                {counts.folders} folders, {counts.cards} cards.
-            </p>
-            <form
-                onSubmit={(event) => {
-                    event.preventDefault()
-                }}
-            >
-                <input
-                    value={draft}
-                    onChange={(event) => setDraft(event.target.value)}
-                    aria-label="Name"
-                />
-                <button type="button" onClick={onCreateFolder} disabled={!folder}>
-                    Create folder
-                </button>
-                <button type="button" onClick={onRenameLevel} disabled={!folder}>
-                    Rename this level
-                </button>
-                <button type="button" onClick={onCreateCard} disabled={!folder}>
-                    Create card
-                </button>
-            </form>
-            <ul>
-                {items.map((item) => (
-                    <li key={`${item.kind}-${item.id}`}>
-                        <button
-                            type="button"
-                            onClick={() =>
-                                openFolder(item, setFolder, setItems, setCounts, setError)
-                            }
-                        >
-                            {labelFor(item)}
-                        </button>
-                        <button type="button" onClick={() => onRenameItem(item)} disabled={!folder}>
-                            Rename
-                        </button>
-                    </li>
-                ))}
-            </ul>
+        <main className = "file-view">
+            <DotGrid
+                className = "file-view__background"
+                baseColor='#c4c4c4'
+                activeColor='#5c5c5c'
+            />
+            <div className='file-view__content'>
+                <p>{error}</p>
+                <h1>{folder ? folder.name : 'Current level'}</h1>
+                <p>
+                    {counts.folders} folders, {counts.cards} cards.
+                </p>
+                <form
+                    onSubmit={(event) => {
+                        event.preventDefault()
+                    }}
+                >
+                    <input
+                        value={draft}
+                        onChange={(event) => setDraft(event.target.value)}
+                        aria-label="Name"
+                    />
+                    <button type="button" onClick={onCreateFolder} disabled={!folder}>
+                        Create folder
+                    </button>
+                    <button type="button" onClick={onRenameLevel} disabled={!folder}>
+                        Rename this level
+                    </button>
+                    <button type="button" onClick={onCreateCard} disabled={!folder}>
+                        Create card
+                    </button>
+                </form>
+                <ul>
+                    {items.map((item) => (
+                        <li key={`${item.kind}-${item.id}`}>
+                            {item.kind === "card" ? (
+                                <CardTile title = {item.title} theme = "White"/>
+                            ) : (
+                                <button type = "button" onClick = {() => 
+                                    openFolder(item, setFolder, setItems, setCounts, setError)
+                                }>
+                                    {labelFor(item)}
+                                </button>
+                            )}
+                            <button type = "button" onClick = {() => onRenameItem(item)} disabled = {!folder}>Rename</button>
+                        </li>
+                    ))}
+                </ul>
+            </div>
         </main>
-    )
+    );
 }
 
 export async function fetchRootFolder() {
