@@ -5,9 +5,12 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../supabase.js'
 import { createCard, createFolder, renameCard, renameFolder } from './fileActions.js'
 import CardTile from '../components/CardTile.jsx'
-import DotGrid from '../components/react-bits/DotGrid.jsx'
+import AppShell from '../components/AppShell.jsx'
+import Sidebar from '../components/Sidebar.jsx'
 
 export default function FileView() {
+    const [root, setRoot] = useState(null)
+    const [branches, setBranches] = useState([])
     const [folder, setFolder] = useState(null)
     const [items, setItems] = useState([])
     const [counts, setCounts] = useState({ folders: 0, cards: 0 })
@@ -26,7 +29,9 @@ export default function FileView() {
                 setError('Have not open the root level yet')
                 return
             }
+            setRoot(root)
             await showFolder(root, setFolder, setItems, setCounts, setError)
+            await refreshBranches(root)
         }
 
         load().catch((caught) => {
@@ -40,9 +45,35 @@ export default function FileView() {
         }
     }, [])
 
+    async function refreshBranches(rootRow) {
+        const level = await fetchLevel(rootRow.id)
+        if (!level || level.error) {
+            return
+        }
+        setBranches(level.folders || [])
+    }
+
     async function reload(nextFolder) {
         await showFolder(nextFolder, setFolder, setItems, setCounts, setError)
     }
+
+    async function openBranch(folderId) {
+        const picked = branches.find((entry) => entry.id === folderId)
+        if (!picked) {
+            return
+        }
+        await showFolder(picked, setFolder, setItems, setCounts, setError)
+    }
+
+    const menuItems = root
+        ? [{
+            label: root.name,
+            children: branches.map((entry) => ({
+                value: entry.id,
+                label: entry.name,
+            })),
+        }]
+        : []
 
     async function onCreateFolder() {
         const result = await createFolder(folder.id, draft)
@@ -52,6 +83,9 @@ export default function FileView() {
         }
         setDraft('')
         await reload(folder)
+        if (root) {
+            await refreshBranches(root)
+        }
     }
 
     async function onRenameLevel() {
@@ -61,7 +95,13 @@ export default function FileView() {
             return
         }
         setDraft('')
-        await reload({ id: folder.id, name: result.folder.name })
+        const renamed = { id: folder.id, name: result.folder.name }
+        await reload(renamed)
+        if (root && folder.id === root.id) {
+            setRoot(renamed)
+        } else if (root) {
+            await refreshBranches(root)
+        }
     }
 
     async function onCreateCard() {
@@ -83,59 +123,71 @@ export default function FileView() {
         }
         setDraft('')
         await reload(folder)
+        if (root && item.kind === 'folder') {
+            await refreshBranches(root)
+        }
     }
 
     return (
-        <main className = "file-view">
-            <DotGrid
-                className = "file-view__background"
-                baseColor='#c4c4c4'
-                activeColor='#5c5c5c'
-            />
-            <div className='file-view__content'>
-                <p>{error}</p>
-                <h1>{folder ? folder.name : 'Current level'}</h1>
-                <p>
-                    {counts.folders} folders, {counts.cards} cards.
-                </p>
-                <form
-                    onSubmit={(event) => {
-                        event.preventDefault()
-                    }}
-                >
-                    <input
-                        value={draft}
-                        onChange={(event) => setDraft(event.target.value)}
-                        aria-label="Name"
-                    />
-                    <button type="button" onClick={onCreateFolder} disabled={!folder}>
-                        Create folder
-                    </button>
-                    <button type="button" onClick={onRenameLevel} disabled={!folder}>
-                        Rename this level
-                    </button>
-                    <button type="button" onClick={onCreateCard} disabled={!folder}>
-                        Create card
-                    </button>
-                </form>
-                <ul>
-                    {items.map((item) => (
-                        <li key={`${item.kind}-${item.id}`}>
-                            {item.kind === "card" ? (
-                                <CardTile title = {item.title} theme = "White"/>
-                            ) : (
-                                <button type = "button" onClick = {() => 
-                                    openFolder(item, setFolder, setItems, setCounts, setError)
-                                }>
-                                    {labelFor(item)}
-                                </button>
-                            )}
-                            <button type = "button" onClick = {() => onRenameItem(item)} disabled = {!folder}>Rename</button>
-                        </li>
-                    ))}
-                </ul>
+        <AppShell
+            sidebar={root ? <Sidebar items={menuItems} onSelect={openBranch} /> : null}
+        >
+            <div className="file-view__main">
+                        <p>{error}</p>
+                        <h1>{folder ? folder.name : 'Current level'}</h1>
+                        <p>
+                            {counts.folders} folders, {counts.cards} cards.
+                        </p>
+                        <form
+                            onSubmit={(event) => {
+                                event.preventDefault()
+                            }}
+                        >
+                            <input
+                                value={draft}
+                                onChange={(event) => setDraft(event.target.value)}
+                                aria-label="Name"
+                            />
+                            <button type="button" onClick={onCreateFolder} disabled={!folder}>
+                                Create folder
+                            </button>
+                            <button type="button" onClick={onRenameLevel} disabled={!folder}>
+                                Rename this level
+                            </button>
+                            <button type="button" onClick={onCreateCard} disabled={!folder}>
+                                Create card
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => root && showFolder(root, setFolder, setItems, setCounts, setError)}
+                                disabled={!root}
+                            >
+                                Top folder
+                            </button>
+                        </form>
+                        <ul>
+                            {items.map((item) => (
+                                <li key={`${item.kind}-${item.id}`}>
+                                    {item.kind === 'card' ? (
+                                        <CardTile title={item.title} theme="White" />
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                openFolder(item, setFolder, setItems, setCounts, setError)
+                                            }
+                                        >
+                                            {labelFor(item)}
+                                        </button>
+                                    )}
+                                    <button type="button" onClick={() => onRenameItem(item)} disabled={!folder}>
+                                        Rename
+                                    </button>
+                                </li>
+                            ))}
+                        </ul>
             </div>
-        </main>
+        </AppShell>
     );
 }
 

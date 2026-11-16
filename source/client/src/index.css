@@ -1,15 +1,66 @@
-.file-view {
+.app-shell {
     position: relative;
     min-height: 100vh;
 }
 
-.file-view > .file-view__background {
+.app-shell > .app-shell__background {
     position: absolute;
     inset: 0;
     z-index: 0;
+    pointer-events: none;
 }
 
-.file-view__content {
+.app-shell__content {
     position: relative;
     z-index: 1;
+    display: flex;
+    gap: 32px;
+    align-items: flex-start;
+    padding: 24px;
+}
+
+.app-shell__main {
+    flex: 1;
+    min-width: 0;
+}
+
+.sidebar {
+    width: 240px;
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow: hidden;
+}
+
+.sidebar--collapsed {
+    width: 48px;
+}
+
+.sidebar--collapsed .branched-menu,
+.sidebar--collapsed .sidebar__footer {
+    display: none;
+}
+
+.file-view__main form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 16px 0;
+}
+
+.file-view__main ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.file-view__main li {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
 }
