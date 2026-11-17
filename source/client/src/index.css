@@ -33,14 +33,6 @@
     overflow: hidden;
 }
 
-.sidebar--collapsed {
-    width: 48px;
-}
-
-.sidebar--collapsed .branched-menu,
-.sidebar--collapsed .sidebar__footer {
-    display: none;
-}
 
 .file-view__main form {
     display: flex;
