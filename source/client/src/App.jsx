@@ -30,7 +30,7 @@ import {
     updateCardBody,
 } from './views/fileActions.js'
 import { fetchDeleteImpact, fetchLevel, fetchRootFolder, fetchTree } from './views/levelActions.js'
-import { groupSearchResults, isSearchShortcut, moveSelection, openSearchResult } from './views/searchActions.js'
+import { isSearchShortcut, openSearchResult } from './views/searchActions.js'
 import { runPendingCommit } from './pendingCommit.js'
 
 const THEME_STORAGE_KEY = 'reviewlab.theme'
@@ -100,10 +100,6 @@ function searchRows(tree) {
             ancestors: chainAbove(row.folder_id),
         })),
     ]
-}
-
-function flattenGroups(groups) {
-    return groups.flatMap((group) => group.items || [])
 }
 
 function defaultRemovalText(folderCount, cardCount) {
@@ -391,7 +387,6 @@ function ReviewLab() {
     const [dataVersion, setDataVersion] = useState(0)
     const [searchOpen, setSearchOpen] = useState(false)
     const [query, setQuery] = useState('')
-    const [selectedIndex, setSelectedIndex] = useState(0)
     const [pendingDelete, setPendingDelete] = useState(null)
     const [readyFolders, setReadyFolders] = useState({})
 
@@ -435,12 +430,10 @@ function ReviewLab() {
     const openSearch = useCallback(() => {
         setSearchOpen(true)
         setQuery('')
-        setSelectedIndex(0)
     }, [])
 
     const closeSearch = useCallback(() => {
         setSearchOpen(false)
-        setSelectedIndex(0)
     }, [])
 
     const cancelDelete = useCallback(() => {
@@ -512,21 +505,28 @@ function ReviewLab() {
         return () => window.removeEventListener('keydown', onKeyDown)
     }, [pendingDelete, searchOpen, openSearch, closeSearch, cancelDelete])
 
-    const groups = useMemo(() => groupSearchResults(searchRows(tree), query, new Date()), [tree, query])
-    const searchRowsFlat = useMemo(() => flattenGroups(groups), [groups])
+    // The rows of the whole tree. The search layer does the matching and the
+    // grouping, the application only opens the row that was chosen.
+    const rows = useMemo(() => searchRows(tree), [tree])
 
-    const moveSearchSelection = useCallback((direction) => {
-        const count = searchRowsFlat.length
-        setSelectedIndex((current) => moveSelection(current, direction, count))
-    }, [searchRowsFlat.length])
-
-    const confirmSearchSelection = useCallback(() => {
-        const row = searchRowsFlat[selectedIndex]
-        if (!row) {
-            return
+    // The branch menu of the sidebar: the root folder and its children.
+    const menuItems = useMemo(() => {
+        const folders = tree.folders || []
+        const root = folders.find((folder) => !folder.parent_id)
+        if (!root) {
+            return []
         }
-        const target = openSearchResult(row)
+        return [{
+            label: root.name,
+            children: folders
+                .filter((folder) => folder.parent_id === root.id)
+                .map((folder) => ({ value: folder.id, label: folder.name })),
+        }]
+    }, [tree])
+
+    const confirmSearchResult = useCallback((row) => {
         closeSearch()
+        const target = openSearchResult(row)
         if (!target) {
             return
         }
@@ -535,7 +535,14 @@ function ReviewLab() {
             return
         }
         navigate(`/focus/${target.folderId}/${target.cardId}`)
-    }, [searchRowsFlat, selectedIndex, navigate, closeSearch])
+    }, [navigate, closeSearch])
+    // The root folder of the tree. The delete confirmation needs it, so it is
+    // found before the callbacks that read it.
+    const rootFolderId = useMemo(() => {
+        const folders = tree.folders || []
+        const root = folders.find((folder) => !folder.parent_id)
+        return root ? root.id : null
+    }, [tree])
 
     // The counts of the confirmation come from the server, so they always
     // match what a delete would really remove.
@@ -620,26 +627,6 @@ function ReviewLab() {
         navigate(`/focus/${currentFolderId}/${result.card.id}`)
     }, [currentFolderId, navigate])
 
-    const menuItems = useMemo(() => {
-        const folders = tree.folders || []
-        const root = folders.find((folder) => !folder.parent_id)
-        if (!root) {
-            return []
-        }
-        return [{
-            label: root.name,
-            children: folders
-                .filter((folder) => folder.parent_id === root.id)
-                .map((folder) => ({ value: folder.id, label: folder.name })),
-        }]
-    }, [tree])
-
-    const rootFolderId = useMemo(() => {
-        const folders = tree.folders || []
-        const root = folders.find((folder) => !folder.parent_id)
-        return root ? root.id : null
-    }, [tree])
-
     const levelReady = Boolean(currentFolderId && readyFolders[currentFolderId])
 
     const shared = {
@@ -668,12 +655,9 @@ function ReviewLab() {
     const searchPalette = (
         <SearchPalette
             open={searchOpen}
-            query={query}
-            groups={groups}
-            selectedIndex={selectedIndex}
+            rows={rows}
             onQueryChange={setQuery}
-            onMove={moveSearchSelection}
-            onConfirm={confirmSearchSelection}
+            onConfirm={confirmSearchResult}
             onClose={closeSearch}
         />
     )
@@ -713,22 +697,22 @@ function ReviewLab() {
 
     return (
         <div className={`app-root app-root--${theme === 'Dark' ? 'dark' : 'white'}`} data-theme={theme}>
-            <AppShell sidebar={sidebar} overlay={<LayerBoundary>{overlay}</LayerBoundary>}>
-                {error ? (
-                    <div className="app-error" role="alert">
-                        <span className="app-error__message">{error}</span>
-                        <button type="button" className="app-error__dismiss" onClick={clearError} aria-label="Dismiss the message">
-                            Dismiss
-                        </button>
-                    </div>
-                ) : null}
-                <Routes>
-                    <Route path="/" element={<RootRoute />} />
-                    <Route path="/folder/:folderId" element={<FileRoute {...shared} />} />
-                    <Route path="/focus/:folderId/:itemId" element={<FocusRoute {...shared} />} />
-                    <Route path="/stats/:folderId" element={<StatsRoute {...shared} />} />
-                    <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
+                <AppShell sidebar={sidebar} overlay={<LayerBoundary>{overlay}</LayerBoundary>}>
+                    {error ? (
+                        <div className="app-error" role="alert">
+                            <span className="app-error__message">{error}</span>
+                            <button type="button" className="app-error__dismiss" onClick={clearError} aria-label="Dismiss the message">
+                                Dismiss
+                            </button>
+                        </div>
+                    ) : null}
+                    <Routes>
+                        <Route path="/" element={<RootRoute />} />
+                        <Route path="/folder/:folderId" element={<FileRoute {...shared} />} />
+                        <Route path="/focus/:folderId/:itemId" element={<FocusRoute {...shared} />} />
+                        <Route path="/stats/:folderId" element={<StatsRoute {...shared} />} />
+                        <Route path="*" element={<Navigate to="/" replace />} />
+                    </Routes>
             </AppShell>
             {deleteDialog}
         </div>

@@ -1,10 +1,14 @@
 // Search layer: a palette in the middle of the screen above the current view.
 // The palette has no address of its own, so it is closed again after a reload.
+//
+// The rules of the search, that is the matching, the grouping by the day of
+// the last change, the path of a result and the movement of the selection,
+// live in searchActions.js. This file only draws them.
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Cancel01Icon, Folder01Icon, Note01Icon, Search01Icon } from '@hugeicons/core-free-icons'
-import { pathLabel } from '../views/searchActions.js'
+import { groupSearchResults, moveSelection, pathLabel } from '../views/searchActions.js'
 import './SearchPalette.css'
 
 // The visible name of a row: a folder shows its name, a card shows its title.
@@ -44,26 +48,28 @@ export function rowIcon(item) {
 
 export default function SearchPalette({
     open = false,
-    query = '',
-    groups = [],
-    selectedIndex = 0,
+    rows = [],
     onQueryChange,
-    onMove,
     onConfirm,
     onClose,
 }) {
+    const [query, setQuery] = useState('')
+    const [selectedIndex, setSelectedIndex] = useState(0)
     const inputRef = useRef(null)
     const panelRef = useRef(null)
-    const moveFromRef = useRef(null)
-    const [pending, setPending] = useState(null)
-    const [pendingConfirm, setPendingConfirm] = useState(false)
+
+    // The matching and the grouping are the rules of the search layer.
+    const groups = useMemo(
+        () => groupSearchResults(rows, query, new Date()),
+        [rows, query],
+    )
 
     // The rows keep the order of the groups, and empty groups are left out.
     const rendered = useMemo(() => {
         const out = []
         let index = 0
-        for (const group of groups ?? []) {
-            const items = group?.items ?? []
+        for (const group of groups) {
+            const items = group.items || []
             if (items.length === 0) {
                 continue
             }
@@ -77,6 +83,16 @@ export default function SearchPalette({
 
     const rowCount = rendered.reduce((sum, group) => sum + group.rows.length, 0)
 
+    // Opening starts with an empty query and the first row selected.
+    useEffect(() => {
+        if (!open) {
+            return
+        }
+        setQuery('')
+        setSelectedIndex(0)
+        onQueryChange?.('')
+    }, [open, onQueryChange])
+
     // The input has the focus as soon as the palette opens.
     useEffect(() => {
         if (!open) {
@@ -88,42 +104,6 @@ export default function SearchPalette({
             node.select()
         }
     }, [open])
-
-    // Opening starts on the first row, and closing forgets the pending row.
-    useEffect(() => {
-        if (!open) {
-            setPending(null)
-            setPendingConfirm(false)
-            return
-        }
-        if (rowCount === 0 || selectedIndex === 0) {
-            return
-        }
-        moveFromRef.current = null
-        setPending(0)
-        setPendingConfirm(false)
-        // This runs when the palette opens, not on every selection change.
-    }, [open])
-
-    // The parent owns the selection, so a row that is not selected yet is reached one step at a time.
-    useEffect(() => {
-        if (!open || pending === null) {
-            return
-        }
-        if (selectedIndex === pending) {
-            setPending(null)
-            setPendingConfirm(false)
-            if (pendingConfirm) {
-                onConfirm?.()
-            }
-            return
-        }
-        if (moveFromRef.current === selectedIndex) {
-            return
-        }
-        moveFromRef.current = selectedIndex
-        onMove?.(selectedIndex < pending ? 1 : -1)
-    }, [open, pending, pendingConfirm, selectedIndex, onMove, onConfirm])
 
     // Keep the selected row inside the visible part of the list.
     useEffect(() => {
@@ -137,25 +117,43 @@ export default function SearchPalette({
         }
     }, [selectedIndex, rendered])
 
+    function changeQuery(next) {
+        setQuery(next)
+        setSelectedIndex(0)
+        onQueryChange?.(next)
+    }
+
+    function move(direction) {
+        setSelectedIndex((current) => moveSelection(current, direction, rowCount))
+    }
+
+    function confirm() {
+        const row = rendered
+            .flatMap((group) => group.rows)
+            .find((entry) => entry.index === selectedIndex)
+        if (!row) {
+            return
+        }
+        onConfirm?.(row.item)
+    }
+
     function onKeyDown(event) {
         if (event.key === 'ArrowDown') {
             event.preventDefault()
             event.stopPropagation()
-            onMove?.(1)
+            move(1)
             return
         }
         if (event.key === 'ArrowUp') {
             event.preventDefault()
             event.stopPropagation()
-            onMove?.(-1)
+            move(-1)
             return
         }
         if (event.key === 'Enter') {
             event.preventDefault()
             event.stopPropagation()
-            if (rowCount > 0) {
-                onConfirm?.()
-            }
+            confirm()
             return
         }
         if (event.key === 'Escape') {
@@ -163,16 +161,6 @@ export default function SearchPalette({
             event.stopPropagation()
             onClose?.()
         }
-    }
-
-    function onRowClick(rowIndex) {
-        if (rowIndex === selectedIndex) {
-            onConfirm?.()
-            return
-        }
-        moveFromRef.current = null
-        setPending(rowIndex)
-        setPendingConfirm(true)
     }
 
     if (!open) {
@@ -200,7 +188,7 @@ export default function SearchPalette({
                         aria-label="Search folders and cards"
                         placeholder="Search folders and cards"
                         value={query}
-                        onChange={(event) => onQueryChange?.(event.target.value)}
+                        onChange={(event) => changeQuery(event.target.value)}
                     />
                     <button
                         type="button"
@@ -226,7 +214,10 @@ export default function SearchPalette({
                                                 type="button"
                                                 className={`search-layer__row${row.index === selectedIndex ? ' search-layer__row--selected' : ''}`}
                                                 aria-selected={row.index === selectedIndex}
-                                                onClick={() => onRowClick(row.index)}
+                                                onClick={() => {
+                                                    setSelectedIndex(row.index)
+                                                    onConfirm?.(row.item)
+                                                }}
                                             >
                                                 <HugeiconsIcon
                                                     icon={rowIcon(row.item)}
