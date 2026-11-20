@@ -1,6 +1,14 @@
 // Card menu: a small triangle in the top right corner of a card tile.
+//
+// The menu itself is the DropdownMenu of the Astryx design system. It brings
+// the open and the close behaviour, the keyboard navigation and the focus of
+// the menu, so the card tile only has to say what the two entries do.
+//
+// The search layer is not built on the design system, because the product
+// specification asks for the search to be written by hand.
 
-import { useEffect, useRef, useState } from 'react'
+import { useMemo } from 'react'
+import { DropdownMenu } from '@astryxdesign/core/DropdownMenu'
 import './CardMenu.css'
 
 // The two entries of the card menu. There is no Move entry, a card cannot change folder.
@@ -11,92 +19,41 @@ export function cardMenuActions() {
     ]
 }
 
-export default function CardMenu({ open = false, onRename, onDelete, onClose }) {
-    const [menuOpen, setMenuOpen] = useState(Boolean(open))
-    const rootRef = useRef(null)
-
-    // The parent may hold the menu open, the click on the triangle holds it itself.
-    useEffect(() => {
-        setMenuOpen(Boolean(open))
-    }, [open])
-
-    useEffect(() => {
-        if (!menuOpen) {
-            return undefined
-        }
-        function onPointerDown(event) {
-            if (rootRef.current && rootRef.current.contains(event.target)) {
+export default function CardMenu({ open, onRename, onDelete, onClose }) {
+    const items = useMemo(() => cardMenuActions().map((action) => ({
+        id: action.id,
+        label: action.label,
+        variant: action.action === 'delete' ? 'destructive' : 'default',
+        onClick: () => {
+            if (action.action === 'rename') {
+                onRename?.()
                 return
             }
-            setMenuOpen(false)
-            onClose?.()
-        }
-        function onKeyDown(event) {
-            if (event.key !== 'Escape') {
-                return
-            }
-            event.preventDefault()
-            event.stopPropagation()
-            setMenuOpen(false)
-            onClose?.()
-        }
-        document.addEventListener('pointerdown', onPointerDown)
-        document.addEventListener('keydown', onKeyDown)
-        return () => {
-            document.removeEventListener('pointerdown', onPointerDown)
-            document.removeEventListener('keydown', onKeyDown)
-        }
-    }, [menuOpen, onClose])
-
-    function toggle(event) {
-        event.stopPropagation()
-        if (menuOpen) {
-            setMenuOpen(false)
-            onClose?.()
-            return
-        }
-        setMenuOpen(true)
-    }
-
-    function run(action) {
-        setMenuOpen(false)
-        onClose?.()
-        if (action.action === 'rename') {
-            onRename?.()
-            return
-        }
-        // Delete only opens the confirmation, the card is removed after it is accepted.
-        onDelete?.()
-    }
+            // Delete only opens the confirmation, the card is removed after it is accepted.
+            onDelete?.()
+        },
+    })), [onRename, onDelete])
 
     return (
-        <div className="card-menu" ref={rootRef} data-card-menu>
-            <button
-                type="button"
-                className="card-menu__trigger"
-                aria-label="Card actions"
-                aria-haspopup="menu"
-                aria-expanded={menuOpen}
-                onClick={toggle}
-            >
-                <span className="card-menu__triangle" aria-hidden="true" />
-            </button>
-            {menuOpen ? (
-                <ul className="card-menu__list" role="menu" aria-label="Card actions">
-                    {cardMenuActions().map((action) => (
-                        <li key={action.id} role="none">
-                            <button
-                                type="button"
-                                role="menuitem"
-                                className="card-menu__item"
-                                onClick={() => run(action)}
-                            >
-                                {action.label}
-                            </button>
-                        </li>
-                    ))}
-                </ul>
-            ) : null}
-        </div>
+        <DropdownMenu
+            isMenuOpen={open}
+            onOpenChange={(isOpen) => {
+                if (!isOpen) {
+                    onClose?.()
+                }
+            }}
+            renderTrigger={(trigger) => (
+                <button
+                    type="button"
+                    className="card-menu__trigger"
+                    aria-label="Card actions"
+                    {...trigger}
+                >
+                    <span className="card-menu__triangle" aria-hidden="true" />
+                </button>
+            )}
+            items={items}
+            menuWidth={168}
+        />
     )
 }

@@ -144,7 +144,6 @@ export default function CardTile({
             role="button"
         >
             <CardMenu
-                open={false}
                 onRename={() => {
                     if (typeof onBeginEdit === 'function') {
                         onBeginEdit()

@@ -17,6 +17,8 @@ import {
 import AppShell, { shellOverlay } from './components/AppShell.jsx'
 import SearchPalette from './components/SearchPalette.jsx'
 import Sidebar from './components/Sidebar.jsx'
+import { Theme } from '@astryxdesign/core/theme'
+import { neutralTheme } from '@astryxdesign/theme-neutral/built'
 import FileView, { errorText, orderLevel } from './views/FileView.jsx'
 import FocusView from './views/FocusView.jsx'
 import StatsView from './views/StatsView.jsx'
@@ -696,7 +698,8 @@ function ReviewLab() {
     ) : null
 
     return (
-        <div className={`app-root app-root--${theme === 'Dark' ? 'dark' : 'white'}`} data-theme={theme}>
+        <Theme theme={neutralTheme} mode={theme === 'Dark' ? 'dark' : 'light'}>
+            <div className={`app-root app-root--${theme === 'Dark' ? 'dark' : 'white'}`} data-theme={theme}>
                 <AppShell sidebar={sidebar} overlay={<LayerBoundary>{overlay}</LayerBoundary>}>
                     {error ? (
                         <div className="app-error" role="alert">
@@ -713,9 +716,10 @@ function ReviewLab() {
                         <Route path="/stats/:folderId" element={<StatsRoute {...shared} />} />
                         <Route path="*" element={<Navigate to="/" replace />} />
                     </Routes>
-            </AppShell>
-            {deleteDialog}
-        </div>
+                </AppShell>
+                {deleteDialog}
+            </div>
+        </Theme>
     )
 }
 

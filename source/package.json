@@ -6,11 +6,15 @@
     "scripts": {
         "dev": "vite",
         "build": "vite build",
-        "preview": "vite preview"
+        "preview": "vite preview",
+        "test": "node tests/run.mjs"
     },
     "dependencies": {
+        "@astryxdesign/core": "^0.7.11",
+        "@astryxdesign/theme-neutral": "^0.7.11",
         "@hugeicons/core-free-icons": "^4.4.0",
         "@hugeicons/react": "^1.1.10",
+        "@stylexjs/stylex": "^0.19.0",
         "@supabase/supabase-js": "^2.119.0",
         "react": "^19.0.0",
         "react-dom": "^19.0.0",
