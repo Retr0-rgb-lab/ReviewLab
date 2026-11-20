@@ -10,10 +10,32 @@
 -- Apply this file after source/database/api.sql, because the grants below
 -- refer to the functions that api.sql creates.
 
--- The two blanket policies let any visitor read and write every row of every
+-- The blanket policies let any visitor read and write every row of every
 -- table. They are removed: direct table access is not part of the API.
-drop policy if exists folder_anon_all on folders;
-drop policy if exists cards_anon_all on cards;
+--
+-- The policies are dropped by looking them up instead of by name, because a
+-- database that was set up by hand can carry a policy under another name. The
+-- first version of this file dropped a policy called folder_anon_all, while the
+-- live database carried folders_anon_all, and the policy survived.
+do $$
+declare
+    v_policy record;
+begin
+    for v_policy in
+        select schemaname, tablename, policyname
+        from pg_policies
+        where schemaname = 'public'
+          and tablename in ('folders', 'cards')
+    loop
+        execute format(
+            'drop policy if exists %I on %I.%I',
+            v_policy.policyname,
+            v_policy.schemaname,
+            v_policy.tablename
+        );
+    end loop;
+end;
+$$;
 
 -- The anon role gets no access to the tables themselves. Row level security
 -- is enabled on both tables in source/database/schema.sql, so with the grant
