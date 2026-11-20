@@ -21,6 +21,31 @@ that the report needs as evidence.
 
 ## 2. How to run
 
+### The database first
+
+The browser only talks to the API in `source/database/api.sql`, so the SQL has
+to be applied before the application can show anything. In the Supabase SQL
+editor, run the files in this order:
+
+1. `source/database/schema.sql` — the two tables, the constraints, the
+   triggers and the indexes
+2. `source/database/api.sql` — the seventeen functions of the API. It is
+   idempotent and carries a small migration that adds the `ord` column to a
+   database that was created from an earlier version of `schema.sql`
+3. `source/server/policies.sql` — the access rules. It has to run after
+   `api.sql`, because the grants name the functions that `api.sql` creates
+4. `source/database/seed.sql` — only when the tree is empty
+
+To check that the API is in place:
+
+```
+select count(*) from pg_proc where proname like 'api\_%';
+```
+
+The number must be 17.
+
+### The client
+
 ```bash
 cd source
 npm install
@@ -120,35 +145,122 @@ Screenshots of 360 px and of the desktop width go into the report as evidence.
 These test the API layer directly, with the publishable key, the way the browser
 does.
 
+**Result of the run on 20 November 2026: 21 checks, 21 passed, 0 failed.** The
+checks were run against the live project with the publishable key, after
+`api.sql` and `policies.sql` had been applied. The script that runs them is
+kept outside the repository, because it writes into the tree and cleans up
+after itself.
+
 | # | Request | Expected result | Result |
 |---|---|---|---|
-| 7.1 | `POST /rest/v1/rpc/api_list_level` with a valid folder id | 200 with the level | |
-| 7.2 | `POST /rest/v1/rpc/api_list_level` with an unknown folder id | 404 with the code `NOT_FOUND` | |
-| 7.3 | `POST /rest/v1/rpc/api_create_folder` with an empty name | 400 with the code `EMPTY_NAME` | |
-| 7.4 | `POST /rest/v1/rpc/api_create_folder` with a 121 character name | 400 with the code `NAME_TOO_LONG` | |
-| 7.5 | `POST /rest/v1/rpc/api_update_card_body` with a 4001 character body | 400 with the code `BODY_TOO_LONG` | |
-| 7.6 | `POST /rest/v1/rpc/api_set_mastery` with `mastered` | 200, the card comes back with `mastery` set to `mastered` and a new `updated_at` | |
-| 7.7 | `POST /rest/v1/rpc/api_set_mastery` with `unknown` | 400 with the code `INVALID_MASTERY` | |
-| 7.8 | `POST /rest/v1/rpc/api_delete_folder` with the root folder id | 403 with the code `ROOT_DELETE_FORBIDDEN` | |
-| 7.9 | `POST /rest/v1/rpc/api_delete_impact` for a folder with a subfolder | The counts include the folder itself and everything below it | |
-| 7.10 | `POST /rest/v1/folders` with the publishable key | 403. The `anon` role has no direct table access | |
-| 7.11 | `POST /rest/v1/cards` with the publishable key | 403. The `anon` role has no direct table access | |
-| 7.12 | `POST /rest/v1/rpc/api_delete_card` with an unknown id | 404 with the code `NOT_FOUND` | |
+| 7.0 | `POST /rest/v1/rpc/api_get_root` | 200 with the root folder | PASS, 200 |
+| 7.1 | `POST /rest/v1/rpc/api_list_level` with a valid folder id | 200 with the level | PASS, 200, the folders and the cards are both lists |
+| 7.2 | `POST /rest/v1/rpc/api_list_level` with an unknown folder id | 404 with the code `NOT_FOUND` | PASS, 404, `NOT_FOUND: That folder does not exist.` |
+| 7.3 | `POST /rest/v1/rpc/api_create_folder` with an empty name | 400 with the code `EMPTY_NAME` | PASS, 400, `EMPTY_NAME: Folder name cannot be empty.` |
+| 7.4 | `POST /rest/v1/rpc/api_create_folder` with a 121 character name | 400 with the code `NAME_TOO_LONG` | PASS, 400, `NAME_TOO_LONG` |
+| 7.5 | `POST /rest/v1/rpc/api_update_card_body` with a 4001 character body | 400 with the code `BODY_TOO_LONG` | PASS, 400, `BODY_TOO_LONG` |
+| 7.6 | `POST /rest/v1/rpc/api_set_mastery` with `mastered` | 200, the card comes back with `mastery` set to `mastered` and a new `updated_at` | PASS, 200, `updated_at` moved |
+| 7.6b | `POST /rest/v1/rpc/api_set_mastery` with the state the card already has | 200, nothing changes, `updated_at` stays | PASS, 200, `updated_at` unchanged |
+| 7.7 | `POST /rest/v1/rpc/api_set_mastery` with `unknown` | 400 with the code `INVALID_MASTERY` | PASS, 400, `INVALID_MASTERY` |
+| 7.8 | `POST /rest/v1/rpc/api_delete_folder` with the root folder id | 403 with the code `ROOT_DELETE_FORBIDDEN` | PASS, 403, `ROOT_DELETE_FORBIDDEN: The root folder cannot be deleted.` |
+| 7.9 | `POST /rest/v1/rpc/api_delete_impact` for a folder with a subfolder | The counts include the folder itself and everything below it | PASS, 200, 2 folders and 1 card |
+| 7.10 | `POST /rest/v1/folders` with the publishable key | 403. The `anon` role has no direct table access | PASS, 401, `permission denied for table folders` |
+| 7.11 | `POST /rest/v1/cards` with the publishable key | 403. The `anon` role has no direct table access | PASS, 401, `permission denied for table cards` |
+| 7.11b | `GET /rest/v1/folders` with the publishable key | 403. The tables cannot be read directly either | PASS, 401 |
+| 7.12 | `POST /rest/v1/rpc/api_delete_card` with an unknown id | 404 with the code `NOT_FOUND` | PASS, 404, `NOT_FOUND` |
+| 7.13 | `POST /rest/v1/rpc/api_create_folder` with a 120 character name | 200, the name is accepted | PASS, 200 |
+| 7.14 | `POST /rest/v1/rpc/api_update_card_body` with a 4000 character body | 200, the body is accepted | PASS, 200 |
+| 7.15 | `POST /rest/v1/rpc/api_update_card_body` with an empty body | 200, an empty body is valid | PASS, 200 |
+| 7.16 | `POST /rest/v1/rpc/api_create_card` | 200, the title is `New page`, the body is empty, the mastery is `unmarked` | PASS, 200 |
+| 7.17 | `POST /rest/v1/rpc/api_list_tree` | 200, every row carries the insertion order | PASS, 200 |
+| 7.18 | A folder and a card written one after the other | The card has the larger number, so one sequence numbers both tables | PASS, folder 21, card 22 |
 
-## 8. Automated checks
+Two notes came out of the run.
+
+1. The HTTP status of a failure is the number behind the `PT` prefix of the
+   SQLSTATE, so a validation error is 400, a missing row is 404 and a refused
+   operation is 403. The business code, for example `NAME_TOO_LONG`, is the
+   prefix of the message, and that is where the client reads it from.
+2. The first version of `policies.sql` dropped a policy called
+   `folder_anon_all`, while the live database carried one called
+   `folders_anon_all`. The policy survived, so a visitor could still write to
+   the tables. The file now looks the policies up and drops every one of them
+   on the two tables. This was found by check 7.10, which failed before the
+   change.
+
+## 8. Checks of the functions
+
+These check the pure functions of the client, that is the rules of the search,
+the validation of the names and of the bodies, the counters of the statistics
+and the calls that the client sends to the API.
+
+They run without a browser and without a network:
+
+```bash
+cd source && npm test
+```
+
+The runner is `source/tests/run.mjs`. It bundles the application with esbuild
+and replaces the icon package, the Astryx components and the Supabase client
+with the stubs in `source/tests/stubs`, so that the run is fast and the calls
+that the client would send can be read afterwards.
+
+**Result of the run on 20 November 2026: 36 checks, 36 passed, 0 failed.**
+
+| # | What is checked | Result |
+|---|---|---|
+| S.1 | `Ctrl+K` and `Cmd+K` open the search, other keys do not | PASS |
+| S.2 | The shortcut does nothing while a delete confirmation is open | PASS |
+| S.3 | The query is trimmed | PASS |
+| S.4 | An empty query matches every item, the root folder included | PASS |
+| S.5 | A query matches a folder by its name and a card by its title or its body, without regard to case | PASS |
+| S.6 | The groups are Today, Yesterday and Earlier, by the local date | PASS |
+| S.7 | The groups come in the order Today, Yesterday, Earlier, and an empty group is left out | PASS |
+| S.8 | Inside a group the newest change comes first, the same time keeps the order of creation | PASS |
+| S.9 | The path of a result runs from the outermost folder to its parent | PASS |
+| S.10 | The selection stops at the ends of the list and does not wrap around | PASS |
+| S.11 | Opening a result says whether a folder or a card is opened, and in which folder | PASS |
+| S.12 | A row of the palette shows the name of the item and the path above it | PASS |
+| V.1 | A name is trimmed, cannot be empty and is at most 120 characters | PASS |
+| V.2 | The length of a name counts code points, not units of UTF-16, so 120 emoji are accepted | PASS |
+| V.3 | A title of the Focus view is trimmed, cannot be empty and is at most 120 characters, and the reason says which of the two it is | PASS |
+| V.4 | A body of the Focus view may be empty and is at most 4000 characters | PASS |
+| V.5 | A card has exactly the three states the API accepts | PASS |
+| A.1 | Creating a folder calls `api_create_folder` with the parent and the trimmed name | PASS |
+| A.2 | A name that is not valid never reaches the database | PASS |
+| A.3 | Renaming a folder and a card calls `api_rename_folder` and `api_rename_card` with the right arguments | PASS |
+| A.4 | Creating a card calls `api_create_card` without a title, because the title is fixed | PASS |
+| A.5 | The body is trimmed before it is sent, and an empty body is sent as an empty string | PASS |
+| A.6 | A body that is too long never reaches the database | PASS |
+| A.7 | The mastery is sent as one of the three states, and nothing else is accepted | PASS |
+| A.8 | The root folder is never sent to the database for a delete | PASS |
+| A.9 | Deleting a card calls `api_delete_card` | PASS |
+| A.10 | The error of the API keeps the status and the code | PASS |
+| U.1 | The sentence of the delete confirmation states both numbers | PASS |
+| U.2 | The confirmation of a card does not talk about folders | PASS |
+| U.3 | The count of the confirmation counts the item itself | PASS |
+| U.4 | The completion rate counts the marked cards over the cards of the level | PASS, 2 of 3 gives 67% |
+| U.5 | A level without cards has no rate and no division by zero | PASS |
+| U.6 | The list of the cards that are not mastered leaves the unmarked cards out and keeps the order of creation | PASS |
+| U.7 | A new card starts with the title `New page`, an empty body and no mark | PASS |
+| U.8 | A row of a level is either a folder or a card | PASS |
+| U.9 | The card menu has Rename and Delete and no Move | PASS |
+
+## 9. Automated checks
 
 | # | Check | Command | Result |
 |---|---|---|---|
-| 8.1 | The client builds | `cd source && npx vite build` | |
-| 8.2 | No console error in the browser, in the file view, in Focus, in the statistics view and in the search layer | manual, during the demo recording | |
-| 8.3 | No JavaScript error while the application runs | manual, during the demo recording | |
+| 9.1 | The client builds | `cd source && npx vite build` | |
+| 9.2 | The functions of the client behave as the specification says | `cd source && npm test` | 36 checks, 36 passed, 0 failed |
+| 9.3 | No console error in the browser, in the file view, in Focus, in the statistics view and in the search layer | manual, during the demo recording | |
+| 9.4 | No JavaScript error while the application runs | manual, during the demo recording | |
 
 The specification and the assessment guide ask for a manual test table for a solo
-project. The automated checks above are kept to the build. A test framework was
-not added, because the course baseline does not ask for one and the time is
-better spent on the features that are missing.
+project. The automated checks above cover the build and the rules of the
+client. A test framework was not added, because the course baseline does not ask
+for one and the time is better spent on the features that are missing.
 
-## 9. Known bugs and limitations
+## 10. Known bugs and limitations
 
 To be filled in after the test run. The following limitation is known already and
 is part of the product design, not a bug:
@@ -158,6 +270,6 @@ is part of the product design, not a bug:
   every client, because the access rules let the `anon` role call the API
   functions and nothing else. The report lists this as a known limitation.
 
-## 10. Results
+## 11. Results
 
 Filled in after the run and copied into the report under "Testing".

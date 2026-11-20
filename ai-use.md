@@ -88,7 +88,15 @@ The API layer and the components that were still empty.
 | MiniMax Code | `source/client/src/index.css` | The import of `views.css` and the removal of the rule of the deleted `FileToolbar`. |
 | MiniMax Code | `source/database/api.sql` | The API layer: seventeen Postgres functions, thirteen of them the endpoints of `source/API.md`, with the validation, the error codes and the recursive count of a delete. |
 | MiniMax Code | `source/database/schema.sql` | The column `ord` and the sequence `reviewlab_ord_seq` that carry the insertion order, and the ordering indexes that use them. |
-| MiniMax Code | `source/server/policies.sql` | The access rules: the two blanket policies for the `anon` role were removed, the role has no grants on the tables, and it may only execute the API functions. |
+| MiniMax Code | `source/server/policies.sql` | The access rules: the two blanket policies for the `anon` role were removed, the role has no grants on the tables, and it may only execute the API functions. On 20 November 2026 the file was changed again, after the live test found that a policy named `folders_anon_all` had survived: the policies are now looked up and every one of them on the two tables is dropped. |
+| MiniMax Code | `source/tests/run.mjs` | The runner of the checks of the functions. It bundles the application with esbuild and replaces the icon package, the Astryx components and the Supabase client with stubs. |
+| MiniMax Code | `source/tests/cases.mjs` | The 36 checks of the pure functions: the rules of the search, the validation of the names, the titles and the bodies, the counters of the statistics, the sentence of the delete confirmation and the calls that the client sends to the API. |
+| MiniMax Code | `source/tests/stubs/supabase.js` | The stand-in for the Supabase client. It records the calls, so a test can check the name of the function and the arguments that the client sends. |
+| MiniMax Code | `source/tests/stubs/hugeicons.js` | The stand-in for the icon package. |
+| MiniMax Code | `source/tests/stubs/astryx.js` | The stand-in for the Astryx components. |
+| MiniMax Code | `source/client/src/components/CardMenu.jsx` | The corner menu of a card is built on the DropdownMenu of the Astryx design system. The two entries and what they do are written here. The search layer is not built on the design system, because the product specification asks for the search to be written by hand. |
+| MiniMax Code | `source/client/src/main.jsx` | The entry point renders `App.jsx` instead of the file view alone, and it loads the stylesheets of the design system. |
+| MiniMax Code | `source/client/src/index.css` | The import of `views.css` and the removal of the rule of the deleted `FileToolbar`. |
 | MiniMax Code | `.gitignore` | `dist` was added, so the build output stays out of the repository. The `docs` rule was changed earlier, so that the product spec is published and the course requirements are not. |
 
 ## How the code was verified
@@ -101,16 +109,19 @@ checked. These are the checks that were run.
   the functions in `source/database/api.sql`, with the grants in
   `source/server/policies.sql` and with every call in the client. The names and
   the arguments match on all four sides.
-- The SQL: the three SQL files are parsed with a PostgreSQL parser, so the
-  statements are checked. The functions themselves were **not** run against a
-  live database, because no local PostgreSQL server was available. They have to
-  be applied to the Supabase project and checked there before the demo.
-- The rules of the client: the pure functions of the search layer, the file
-  actions and the Focus view were run through assertion scripts outside the
-  repository, over the boundaries of the specification: an empty name, a name of
-  121 characters, a body of 4001 characters, a body of exactly 4000
-  characters, the three mastery values, the order of the search results and
-  the rate of a level with no cards.
+- The SQL: the three SQL files are parsed with a PostgreSQL parser, and they
+  were applied to the live Supabase project with the Supabase CLI on
+  20 November 2026. All three files were accepted by the database.
+- The API against the live database: 21 checks of the access rules of
+  `source/TEST-PLAN.md` section 7, run with the publishable key the way the
+  browser does. 21 passed, 0 failed. They cover the status codes, the error
+  codes, the limits of the names and of the bodies, the count of a delete and
+  the refusal of a direct write to the tables.
+- The functions of the client: `cd source && npm test` runs 36 checks of the
+  pure functions, with the Supabase client replaced by a stub that records the
+  calls. 36 passed, 0 failed. They cover the rules of the search, the
+  validation, the counters of the statistics, the sentence of the delete
+  confirmation and the arguments that the client sends to the API.
 - The behaviour in the browser was **not** tested. The demo recording is where
   the paths of the test plan are walked through.
 
@@ -123,5 +134,7 @@ checked. These are the checks that were run.
 | React Bits: Branched Menu | `source/client/src/components/react-bits/BranchedMenu.jsx` | David Haz | MIT + Commons Clause, same terms. |
 | React Bits: Shape Grid | `source/client/src/components/react-bits/ShapeGrid.jsx`, `ShapeGrid.css` | David Haz | MIT + Commons Clause, same terms. |
 | Hugeicons | `node_modules/@hugeicons/react`, `@hugeicons/core-free-icons` | Hugeicons | MIT. The free package only, the Pro styles are not used. |
+| Astryx | `node_modules/@astryxdesign/core`, `@astryxdesign/theme-neutral` | Meta | MIT. The DropdownMenu of the card corner menu and the theme that goes with it. The search layer is not built on it, because the product specification asks for the search to be written by hand. |
+| StyleX | `node_modules/@stylexjs/stylex` | Meta | MIT. The compiler that the Astryx components are built with. |
 | React, React DOM, React Router | `node_modules` | Meta, Remix Software | MIT |
 | Supabase JavaScript client | `node_modules/@supabase/supabase-js` | Supabase | MIT |
