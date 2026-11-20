@@ -1,0 +1,127 @@
+/* Search layer: a palette in the middle of the screen above the current view. */
+
+.search-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 10vh 16px 16px;
+    background: var(--rl-scrim, rgba(0, 0, 0, 0.35));
+}
+
+.search-layer__panel {
+    width: min(640px, 100%);
+    max-height: 70vh;
+    overflow-y: auto;
+    border-radius: 14px;
+    background: var(--search-layer-surface, #ffffff);
+    color: var(--search-layer-text, #18181b);
+    box-shadow: 0 24px 48px -24px rgba(0, 0, 0, 0.6);
+}
+
+.search-layer__bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(127, 127, 127, 0.25);
+}
+
+.search-layer__input {
+    flex: 1;
+    min-width: 0;
+    font: inherit;
+    font-size: 1rem;
+    color: inherit;
+    background: transparent;
+    border: 0;
+    outline: none;
+    padding: 4px 0;
+}
+
+.search-layer__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    color: inherit;
+    background: transparent;
+    border: 0;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.search-layer__groups {
+    list-style: none;
+    margin: 0;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.search-layer__group-label {
+    margin: 0;
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    opacity: 0.6;
+}
+
+.search-layer__rows {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.search-layer__row {
+    width: 100%;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 8px 10px;
+    font: inherit;
+    text-align: left;
+    color: inherit;
+    background: transparent;
+    border: 0;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.search-layer__row--selected {
+    background: rgba(127, 127, 127, 0.18);
+}
+
+.search-layer__name {
+    flex: none;
+    max-width: 60%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.search-layer__path {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.85rem;
+    opacity: 0.6;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.search-layer__empty {
+    margin: 0;
+    padding: 20px 16px;
+    text-align: center;
+    opacity: 0.7;
+}

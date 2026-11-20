@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { validateName } from '../views/fileActions.js'
+import { registerPendingCommit } from '../pendingCommit.js'
 import Folder from './react-bits/Folder.jsx'
 
 export function folderCaption(name) {
@@ -10,7 +11,7 @@ export function folderCaption(name) {
 export function beginFolderRename(event) {
     //Make sure only double click can activate
     if (event.detail !== 2) {
-        return false
+        return false;
     }
     return event.target.closest('[data-folder-name]') !== null
 }
@@ -27,6 +28,7 @@ export default function FolderTile({
     onBeginRename,
     onCommitRename,
     onCancelRename,
+    onDelete,
 }) {
     const [draft, setDraft] = useState(folder?.name ?? '')
     const cancelEdit = useRef(false)
@@ -36,6 +38,28 @@ export default function FolderTile({
             setDraft(folder?.name ?? '')
         }
     }, [editing, folder?.name])
+
+    // While the name is being edited, the application can ask for the change
+    // to be saved. The search shortcut uses this.
+    useEffect(() => {
+        if (!editing) {
+            return undefined
+        }
+        const commit = async () => {
+            const check = validateName(draft)
+            if (!check.ok) {
+                return { ok: false, message: check.error }
+            }
+            const result = typeof onCommitRename === 'function'
+                ? await onCommitRename(check.name)
+                : null
+            if (result && result.error) {
+                return { ok: false, message: result.error }
+            }
+            return { ok: true }
+        }
+        return registerPendingCommit(commit)
+    }, [editing, draft, onCommitRename])
 
     function onNameClick(event) {
         if (!beginFolderRename(event)) {
@@ -101,6 +125,16 @@ export default function FolderTile({
                     {folderCaption(folder?.name)}
                 </span>
             )}
+            {onDelete && !editing ? (
+                <button
+                    type="button"
+                    className="folder-tile__delete"
+                    onClick={onDelete}
+                    aria-label={`Delete folder ${folderCaption(folder?.name)}`}
+                >
+                    Delete
+                </button>
+            ) : null}
         </div>
     )
 }

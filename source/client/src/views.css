@@ -1,0 +1,320 @@
+/*
+ * Styles for the application frame, the file view, the delete confirmation
+ * dialog and the host of the search layer.
+ *
+ * The search palette draws its own screen and its own panel in
+ * SearchPalette.css. The only class here that belongs to the search layer is
+ * "search-layer__host", which holds it above the shell.
+ */
+
+.app-root {
+    --rl-surface: #ffffff;
+    --rl-surface-raised: #f6f6f7;
+    --rl-ink: #18181b;
+    --rl-ink-muted: #6b7280;
+    --rl-line: rgba(24, 24, 27, 0.14);
+    --rl-accent: #3d8bff;
+    --rl-danger: #d92d20;
+    --rl-scrim: rgba(24, 24, 27, 0.32);
+    --rl-shadow: 0 24px 60px -24px rgba(24, 24, 27, 0.45);
+    --search-layer-surface: #ffffff;
+    --search-layer-text: #18181b;
+
+    min-height: 100vh;
+    background: var(--rl-surface);
+    color: var(--rl-ink);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.app-root--dark {
+    --rl-surface: #101014;
+    --rl-surface-raised: #1c1c22;
+    --rl-ink: #f4f4f5;
+    --rl-ink-muted: #a1a1aa;
+    --rl-line: rgba(255, 255, 255, 0.16);
+    --rl-accent: #7aa7ff;
+    --rl-danger: #f97066;
+    --rl-scrim: rgba(0, 0, 0, 0.55);
+    --rl-shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.8);
+    --search-layer-surface: #101014;
+    --search-layer-text: #f4f4f5;
+}
+
+/* The background grid is drawn in light colours, so it fades in the dark theme. */
+.app-root--dark .app-shell__background {
+    opacity: 0.28;
+}
+
+/* The message of a failed call. It stays until the next action succeeds. */
+.app-error {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+    padding: 10px 12px;
+    border: 1px solid var(--rl-danger);
+    border-radius: 10px;
+    background: var(--rl-surface-raised);
+    color: var(--rl-danger);
+}
+
+.app-error__message {
+    flex: 1;
+    min-width: 0;
+}
+
+.app-error__dismiss {
+    border: 1px solid currentColor;
+    border-radius: 999px;
+    background: transparent;
+    color: inherit;
+    padding: 2px 10px;
+    cursor: pointer;
+}
+
+/* The file view. */
+.file-view__main {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.file-view__heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 12px;
+}
+
+.file-view__title {
+    font-family: sans-serif;
+    font-size: 2rem;
+    margin: 0;
+    cursor: text;
+}
+
+.file-view__title-input {
+    font-family: sans-serif;
+    font-size: 2rem;
+    padding: 2px 6px;
+    border: 1px solid var(--rl-accent);
+    border-radius: 8px;
+    background: var(--rl-surface);
+    color: inherit;
+}
+
+.file-view__counts {
+    margin: 0;
+    color: var(--rl-ink-muted);
+}
+
+.file-view__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-left: auto;
+}
+
+.file-view__button {
+    border: 1px solid var(--rl-line);
+    border-radius: 999px;
+    background: var(--rl-surface);
+    color: inherit;
+    padding: 6px 14px;
+    cursor: pointer;
+}
+
+.file-view__button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+/* The unsaved folder row of the create folder flow. */
+.file-view__draft {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 180px;
+}
+
+.file-view__draft-label {
+    color: var(--rl-ink-muted);
+    font-size: 0.85rem;
+}
+
+.file-view__draft-input {
+    font: inherit;
+    padding: 6px 8px;
+    border: 1px solid var(--rl-accent);
+    border-radius: 8px;
+    background: var(--rl-surface);
+    color: inherit;
+}
+
+/* The delete affordance of a folder tile. */
+.folder-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+}
+
+.folder-tile__delete {
+    border: 1px solid var(--rl-line);
+    border-radius: 999px;
+    background: var(--rl-surface-raised);
+    color: var(--rl-ink-muted);
+    padding: 2px 10px;
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+
+.folder-tile__delete:hover {
+    color: var(--rl-danger);
+    border-color: var(--rl-danger);
+}
+
+/* The sidebar. */
+.sidebar__create-card {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    align-self: flex-start;
+    padding: 8px 14px;
+    border: 1px solid var(--rl-line);
+    border-radius: 999px;
+    background: var(--rl-surface);
+    color: inherit;
+    cursor: pointer;
+}
+
+.sidebar__create-card:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.sidebar__footer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.sidebar__footer-button {
+    border: 1px solid var(--rl-line);
+    border-radius: 999px;
+    background: var(--rl-surface);
+    color: inherit;
+    padding: 4px 12px;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+/*
+ * The search layer covers the whole shell, the sidebar included. The palette
+ * draws its own screen and its own panel in SearchPalette.css, so the host
+ * here only holds it. The two theme variables are the ones the palette reads.
+ */
+.search-layer__host {
+    display: contents;
+}
+
+/* The delete confirmation sits above the search layer. */
+.confirm-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: var(--rl-scrim);
+}
+
+.confirm-dialog {
+    width: min(440px, 100%);
+    padding: 20px;
+    background: var(--rl-surface);
+    border: 1px solid var(--rl-line);
+    border-radius: 12px;
+    box-shadow: var(--rl-shadow);
+}
+
+.confirm-dialog__title {
+    margin: 0 0 8px;
+    font-size: 1.1rem;
+}
+
+.confirm-dialog__text {
+    margin: 0 0 16px;
+    color: var(--rl-ink-muted);
+}
+
+.confirm-dialog__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.confirm-dialog__button {
+    border: 1px solid var(--rl-line);
+    border-radius: 999px;
+    background: var(--rl-surface-raised);
+    color: inherit;
+    padding: 6px 16px;
+    cursor: pointer;
+}
+
+.confirm-dialog__button--danger {
+    background: var(--rl-danger);
+    border-color: var(--rl-danger);
+    color: #ffffff;
+}
+
+/* Empty and error states. */
+.state {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 24px;
+    border: 1px dashed var(--rl-line);
+    border-radius: 12px;
+}
+
+.state__title {
+    margin: 0;
+    font-size: 1.05rem;
+}
+
+.state__text {
+    margin: 0;
+    color: var(--rl-ink-muted);
+}
+
+.state__message {
+    margin: 0;
+    color: var(--rl-ink-muted);
+}
+
+/* Narrow screens. The sidebar moves above the view so that every action stays
+   reachable from 360px wide. The selectors are more specific than the ones in
+   index.css, so they hold whichever file is read first. */
+@media (max-width: 720px) {
+    .app-shell .app-shell__content {
+        flex-direction: column;
+        gap: 16px;
+        padding: 12px;
+    }
+
+    .app-shell .sidebar {
+        width: 100%;
+    }
+
+    .file-view__actions {
+        margin-left: 0;
+    }
+
+    .file-view__title,
+    .file-view__title-input {
+        font-size: 1.5rem;
+    }
+}

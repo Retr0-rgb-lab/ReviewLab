@@ -1,0 +1,18 @@
+.card-tile {
+    min-width: 180px;
+    min-height: 120px;
+}
+
+.card-tile__title {
+    font-family: sans-serif;
+    font-size: 1.25rem;
+    display: block;
+    margin: 28px 16px 16px;
+}
+
+/*
+The tile of a card in the file view carries the title only.
+The title uses a sans-serif at a size larger than the body in Focus.
+The top right corner belongs to the triangle of the CardMenu, so the title
+does not run over it.
+*/

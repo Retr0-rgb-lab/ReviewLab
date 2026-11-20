@@ -1,5 +1,10 @@
 node_modules
-docs
+dist
 AGENTS.md
 .env
 .env.local
+
+# Everything under docs stays private except the product spec.
+# docs/specs/ is published to GitHub; docs/requirements/ never is.
+docs/*
+!docs/specs/

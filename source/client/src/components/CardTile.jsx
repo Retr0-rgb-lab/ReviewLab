@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { validateName } from '../views/fileActions.js'
+import { registerPendingCommit } from '../pendingCommit.js'
 import SpotlightCard from './react-bits/SpotlightCard.jsx'
+import CardMenu from './CardMenu.jsx'
 import './CardTile.css'
 
 export function cardLabel(title) {
@@ -45,6 +47,7 @@ export default function CardTile({
     onBeginEdit,
     onCommitEdit,
     onCancelEdit,
+    onDelete,
 }) {
     const [draft, setDraft] = useState(title ?? '')
     const cancelEdit = useRef(false)
@@ -55,7 +58,33 @@ export default function CardTile({
         }
     }, [editing, title])
 
+    // While the title is being edited, the application can ask for the change
+    // to be saved. The search shortcut uses this.
+    useEffect(() => {
+        if (!editing) {
+            return undefined
+        }
+        const commit = async () => {
+            const check = validateName(draft)
+            if (!check.ok) {
+                return { ok: false, message: check.error }
+            }
+            const result = typeof onCommitEdit === 'function'
+                ? await onCommitEdit(check.name)
+                : null
+            if (result && result.error) {
+                return { ok: false, message: result.error }
+            }
+            return { ok: true }
+        }
+        return registerPendingCommit(commit)
+    }, [editing, draft, onCommitEdit])
+
     function onCardClick(event) {
+        // A click inside the corner menu never opens the card.
+        if (event.target.closest('[data-card-menu]')) {
+            return
+        }
         if (beginCardTitleEdit(event)) {
             cancelEdit.current = false
             if (typeof onBeginEdit === 'function') {
@@ -105,11 +134,29 @@ export default function CardTile({
                 if (editing) {
                     return
                 }
+                // The corner menu keeps its own keys.
+                if (event.target.closest('[data-card-menu]')) {
+                    return
+                }
                 activateOnKey(event, onOpen)
             }}
             tabIndex={0}
             role="button"
         >
+            <CardMenu
+                open={false}
+                onRename={() => {
+                    if (typeof onBeginEdit === 'function') {
+                        onBeginEdit()
+                    }
+                }}
+                onDelete={() => {
+                    if (typeof onDelete === 'function') {
+                        onDelete()
+                    }
+                }}
+                onClose={() => {}}
+            />
             {editing ? (
                 <input
                     className="card-tile__title"

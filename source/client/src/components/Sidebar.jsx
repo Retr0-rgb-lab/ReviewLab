@@ -1,11 +1,24 @@
 //The design of sidebar which contains the "BranchMenu" component
 
 import BranchedMenu from './react-bits/BranchedMenu.jsx'
+import { SidebarCreateCardButton } from './CreateControls.jsx'
 
 
-export function Sidebar({items, onSelect}) {
+export default function Sidebar({
+    items,
+    onSelect,
+    theme = 'White',
+    onToggleTheme,
+    onOpenSearch,
+    onCreateCard,
+    createCardDisabled = false,
+}) {
     return (
         <aside className = "sidebar">
+            <SidebarCreateCardButton
+                disabled={createCardDisabled}
+                onCreateCard={onCreateCard}
+            />
             <BranchedMenu
                 items = {items}
                 defaultOpen={0}
@@ -14,7 +27,22 @@ export function Sidebar({items, onSelect}) {
                 accentColor = "#18181b"
                 onSelect={onSelect}
             />
-            <div className = "sidebar__footer"/>
+            <div className = "sidebar__footer">
+                <button
+                    type="button"
+                    className="sidebar__footer-button"
+                    onClick={onOpenSearch}
+                >
+                    Search
+                </button>
+                <button
+                    type="button"
+                    className="sidebar__footer-button"
+                    onClick={onToggleTheme}
+                >
+                    {theme === 'Dark' ? 'Use White theme' : 'Use Dark theme'}
+                </button>
+            </div>
         </aside>
     );
 }
