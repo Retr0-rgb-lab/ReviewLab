@@ -97,6 +97,7 @@ The API layer and the components that were still empty.
 | MiniMax Code | `source/client/src/components/CardMenu.jsx` | The corner menu of a card is built on the DropdownMenu of the Astryx design system. The two entries and what they do are written here. The search layer is not built on the design system, because the product specification asks for the search to be written by hand. |
 | MiniMax Code | `source/client/src/main.jsx` | The entry point renders `App.jsx` instead of the file view alone, and it loads the stylesheets of the design system. |
 | MiniMax Code | `source/client/src/index.css` | The import of `views.css` and the removal of the rule of the deleted `FileToolbar`. |
+| MiniMax Code | `source/client/index.html` | The tag that tells a phone how wide the page is, and the icon of the page, so that the browser does not ask for a file that is not there. |
 | MiniMax Code | `.gitignore` | `dist` was added, so the build output stays out of the repository. The `docs` rule was changed earlier, so that the product spec is published and the course requirements are not. |
 
 ## How the code was verified
@@ -122,8 +123,14 @@ checked. These are the checks that were run.
   calls. 36 passed, 0 failed. They cover the rules of the search, the
   validation, the counters of the statistics, the sentence of the delete
   confirmation and the arguments that the client sends to the API.
-- The behaviour in the browser was **not** tested. The demo recording is where
-  the paths of the test plan are walked through.
+- The application in a browser: on 21 November 2026 the built application was
+  served and the path of the test plan was walked through against the live
+  database, at the level of the document and of the state of the controls. The
+  network log shows that every request went to `/rest/v1/rpc/...` and that
+  none went to the tables. The only error in the console was a missing
+  `favicon.ico`, and the icon is now drawn in the page itself.
+- The picture was not looked at. The visual pass was left out on purpose, so
+  the look of the interface has not been checked yet.
 
 ## Third-party code
 
