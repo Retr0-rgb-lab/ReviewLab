@@ -85,6 +85,7 @@ create table if not exists cards (
     body text not null default '',
     folder_id uuid not null references folders (id) on delete cascade,
     mastery text not null default 'unmarked',
+    favorite boolean not null default false,
     ord bigint not null default nextval('public.reviewlab_ord_seq'),
     created_at timestamptz not null default now(),
     updated_at timestamptz not null default now(),
@@ -100,6 +101,12 @@ create table if not exists cards (
         mastery in ('unmarked', 'mastered', 'unmastered')
     )
 );
+
+-- The favorite flag of a card was added after the first version of this file,
+-- so a database that already has the table gets the column here. The default
+-- is false, so the cards that exist already are not favorites.
+alter table cards
+    add column if not exists favorite boolean not null default false;
 
 -- The sequence is shared by the two tables, so it cannot be owned by one
 -- column. It stays behind if the tables are dropped.

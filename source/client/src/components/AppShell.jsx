@@ -1,43 +1,13 @@
-//The design of overall frame of fileView page
+// The frame of the application.
+//
+// The background is a plain colour, so the shell only holds the content of
+// the current view and the layers that cover it. Every view draws its own
+// top bar, its own columns and its own theme switch.
 
-import ShapeGrid from './react-bits/ShapeGrid.jsx'
-
-
-export function backgroundProps() {
-    return {
-        baseColor: "#c4c4c4",
-        activeColor: "#5c5c5c"
-    };
-}
-
-export default function AppShell({ sidebar, children, overlay }) {
-    const colors = backgroundProps()
+export default function AppShell({ children, overlay }) {
     return (
         <div className="app-shell">
-            <ShapeGrid
-                shape="square"
-                direction="none"
-                lineColor="#dde2e7"
-                hoverColor="#94a3b8"
-                hoverFillColor="#94a3b8"
-                fillOpacity={0.1}
-                cellSize={31}
-                speed={0}
-                tiltX={58}
-                tiltY={0}
-                rainbow={false}
-                lineWidth={0.75}
-                radius={0.4}
-                trail={0.55}
-                glow={0.25}
-                twinkle={0}
-                fade={1}
-                clickCascade={false}
-                intro={false}
-                className='app-shell__background'
-            />
             <div className="app-shell__content">
-                {sidebar}
                 <div className="app-shell__main">{children}</div>
             </div>
             {overlay}

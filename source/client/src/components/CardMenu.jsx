@@ -4,8 +4,9 @@
 // the open and the close behaviour, the keyboard navigation and the focus of
 // the menu, so the card tile only has to say what the two entries do.
 //
-// The search layer is not built on the design system, because the product
-// specification asks for the search to be written by hand.
+// The search layer is not built on the design system. Its groups by day, its
+// path line and its own keyboard handling are specific to this application,
+// and a generic palette component does not provide them.
 
 import { useMemo } from 'react'
 import { DropdownMenu } from '@astryxdesign/core/DropdownMenu'

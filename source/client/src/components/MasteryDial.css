@@ -1,0 +1,104 @@
+/*
+ * Styles for the mastery dial.
+ *
+ * The ring itself is styled by CometDial.css. This file places the ring
+ * between the two labels and puts the two numbers under it, and it keeps the
+ * colour of each state in one place.
+ */
+
+.mastery-dial {
+    --mastery-master: #16a34a;
+    --mastery-not-mastered: #dc2626;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    color: var(--rl-ink);
+    font-family: inherit;
+}
+
+.mastery-dial__row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.mastery-dial__ring {
+    display: inline-flex;
+    flex: 0 0 auto;
+}
+
+/* The button only wraps the ring. It stays in the flow of the mouse, so the
+   read only ring inside it still takes the click. */
+.mastery-dial__button {
+    display: inline-flex;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    background: var(--rl-surface);
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+    transition: background-color 120ms ease;
+}
+
+.mastery-dial__button:hover {
+    background: var(--rl-surface-raised);
+}
+
+.mastery-dial__button:focus-visible {
+    outline: 2px solid var(--rl-ink);
+    outline-offset: 3px;
+}
+
+.mastery-dial__label {
+    /* The label takes the room it needs. The row may wrap, so a long label
+       never pushes the ring out of the column. */
+    flex: 0 1 auto;
+    min-width: 0;
+    text-align: center;
+    white-space: nowrap;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    color: var(--rl-ink-muted);
+}
+
+.mastery-dial__label--master {
+    color: var(--mastery-master);
+}
+
+.mastery-dial__label--not-mastered {
+    color: var(--mastery-not-mastered);
+}
+
+.mastery-dial__counts {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 28px;
+}
+
+.mastery-dial__count {
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
+
+.mastery-dial__count--master {
+    color: var(--mastery-master);
+}
+
+.mastery-dial__count--not-mastered {
+    color: var(--mastery-not-mastered);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .mastery-dial__button {
+        transition: none;
+    }
+}

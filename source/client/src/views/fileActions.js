@@ -1,7 +1,7 @@
 // Create, rename and delete folders and cards, and edit card content. Every
 // write goes through the ReviewLab API, so the rules in the database hold.
 
-import { callApi } from '../api.js'
+import { apiSetFavorite, callApi } from '../api.js'
 
 export function validateName(raw) {
     const name = raw.trim();
@@ -106,13 +106,11 @@ export function countRemoval(item, nestedFolders, nestedCards) {
 }
 
 export function removalConfirmText(folderCount, cardCount, kind = 'folder') {
-    // One sentence that states how many folders and how many cards go away.
+    // One sentence for a card and for a folder. The dialog title already names
+    // `kind`, so this sentence only states the two counts, including a zero.
     const folders = toCount(folderCount);
     const cards = toCount(cardCount);
-    if (kind === 'card') {
-        return `Delete this card? ${plural(cards, 'card')} will be removed.`;
-    }
-    return `Delete this folder? ${plural(folders, 'folder')} and ${plural(cards, 'card')} will be removed.`;
+    return `This removes ${plural(folders, 'folder')} and ${plural(cards, 'card')}.`;
 }
 
 export async function deleteFolder(folderId, isRoot) {
@@ -163,6 +161,20 @@ export async function setMastery(cardId, mastery) {
         p_id: cardId,
         p_mastery: mastery,
     });
+    if (response.error){
+        return {error: response.error.message};
+    }
+    return {card: response.data};
+}
+
+export async function setFavorite(cardId, favorite) {
+    // The favorite flag of a card: true or false. The flag sits on the card
+    // next to the mastery, so changing it also moves the card to the top of the
+    // search results.
+    if (typeof favorite !== 'boolean') {
+        return {error: 'Favorite must be true or false.'};
+    }
+    const response = await apiSetFavorite(cardId, favorite);
     if (response.error){
         return {error: response.error.message};
     }

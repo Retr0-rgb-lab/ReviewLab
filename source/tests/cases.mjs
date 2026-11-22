@@ -32,10 +32,18 @@ import {
 } from '../client/src/views/fileActions.js'
 
 import { readApiError } from '../client/src/api.js'
-import { itemKind, newCardFocus, validateBody, validateTitle } from '../client/src/views/FocusView.jsx'
+import { itemKind, newCardFocus, validateBody, validateTitle } from '../client/src/views/ZenView.jsx'
 import { completionRate, markedCount, rateSummary, unmasteredCards } from '../client/src/views/StatsView.jsx'
 import { cardMenuActions } from '../client/src/components/CardMenu.jsx'
 import { rowName, rowPath } from '../client/src/components/SearchPalette.jsx'
+import { masteryShare } from '../client/src/components/MasteryDial.jsx'
+import {
+    cardLayout,
+    offsetOf,
+    wrapIndex,
+    zoomName,
+    zoomValue,
+} from '../client/src/components/ArcGallery.jsx'
 import { calls, resetCalls } from './stubs/supabase.js'
 
 export const checks = []
@@ -277,10 +285,12 @@ check('U.1', 'the sentence of the delete confirmation states both numbers', () =
     assert.match(text, /card/i)
 })
 
-check('U.2', 'the confirmation of a card does not talk about folders', () => {
+check('U.2', 'the confirmation of a card states zero folders and one card', () => {
     const text = removalConfirmText(0, 1, 'card')
-    assert.match(text, /1/)
-    assert.doesNotMatch(text, /folder/i)
+    assert.match(text, /0 folders/)
+    assert.match(text, /1 card/)
+    assert.match(text, /folder/i)
+    assert.doesNotMatch(text, /Delete this card/i)
 })
 
 check('U.3', 'the count of the confirmation counts the item itself', () => {
@@ -333,4 +343,107 @@ check('U.9', 'the card menu has Rename and Delete and no Move', () => {
     const actions = cardMenuActions()
     assert.deepEqual(actions.map((action) => action.label), ['Rename', 'Delete'])
     assert.equal(actions.some((action) => /move/i.test(action.label)), false)
+})
+
+// ------------------------------------------------------------- the dial
+
+check('D.1', 'a level without a marked card has an empty dial and no share', () => {
+    assert.deepEqual(masteryShare(0, 0), { p: 0, value: 0, empty: true })
+})
+
+check('D.2', 'a level where every card is mastered fills the ring', () => {
+    const share = masteryShare(1, 0)
+    assert.equal(share.value, 100)
+    assert.equal(share.empty, false)
+    assert.equal(share.p, 1)
+})
+
+check('D.3', 'a level where no card is mastered is not an empty dial', () => {
+    const share = masteryShare(0, 2)
+    assert.equal(share.value, 0)
+    assert.equal(share.empty, false)
+    assert.equal(share.p, 0)
+})
+
+check('D.4', 'half of the cards mastered gives half of the ring', () => {
+    const share = masteryShare(1, 1)
+    assert.equal(share.value, 50)
+    assert.equal(share.p, 0.5)
+})
+
+check('D.5', 'the share counts the marked cards only, and it is rounded', () => {
+    const share = masteryShare(3, 1)
+    assert.equal(share.value, 75)
+    assert.equal(share.p, 0.75)
+    assert.equal(masteryShare(1, 2).value, 33)
+})
+
+// ----------------------------------------------------------- the gallery
+
+check('G.1', 'the index of a card is wrapped in both directions', () => {
+    assert.equal(wrapIndex(-1, 3), 2)
+    assert.equal(wrapIndex(3, 3), 0)
+    assert.equal(wrapIndex(4, 3), 1)
+    assert.equal(wrapIndex(-4, 3), 2)
+    assert.equal(wrapIndex(0, 0), 0)
+})
+
+check('G.2', 'the distance to a card is taken the short way round', () => {
+    assert.equal(offsetOf(0, 2, 5, true), -2)
+    assert.equal(offsetOf(4, 0, 5, true), -1)
+    assert.equal(offsetOf(2, 0, 5, true), 2)
+    assert.equal(offsetOf(4, 0, 5, false), 4)
+    assert.equal(offsetOf(0, 0, 1, true), 0)
+})
+
+check('G.3', 'the two zoom states have a name and a number', () => {
+    assert.equal(zoomValue('overview'), 0)
+    assert.equal(zoomValue('focused'), 1)
+    assert.equal(zoomName(0.4), 'overview')
+    assert.equal(zoomName(0.6), 'focused')
+    assert.equal(zoomName(0), 'overview')
+    assert.equal(zoomName(1), 'focused')
+    assert.equal(zoomName(zoomValue('overview')), 'overview')
+    assert.equal(zoomName(zoomValue('focused')), 'focused')
+})
+
+check('G.4', 'the card in focus stands in the middle of the arc in both zoom states', () => {
+    const focused = cardLayout(2, 2, 5, 1)
+    const overview = cardLayout(2, 2, 5, 0)
+    assert.equal(focused.distance, 0)
+    assert.equal(focused.x, overview.x)
+    assert.equal(focused.y, overview.y)
+    assert.equal(focused.z, overview.z)
+    assert.equal(focused.scale, overview.scale)
+    assert.equal(focused.opacity, overview.opacity)
+    assert.equal(overview.x, 0)
+    assert.equal(overview.y, 0)
+})
+
+check('G.5', 'in the overview a card that is far away is smaller and fainter', () => {
+    const active = cardLayout(0, 0, 5, 0)
+    const far = cardLayout(3, 0, 5, 0)
+    assert.equal(far.distance, -2)
+    assert.ok(far.scale < active.scale)
+    assert.ok(far.opacity < active.opacity)
+    assert.ok(Math.abs(far.x) > Math.abs(active.x))
+})
+
+check('G.6', 'in the focused state the cards behind peek out to the upper left', () => {
+    const active = cardLayout(0, 0, 5, 1)
+    const behind = cardLayout(1, 0, 5, 1)
+    assert.equal(active.x, 0)
+    assert.equal(active.y, 0)
+    assert.ok(behind.x < 0)
+    assert.ok(behind.y < 0)
+    assert.ok(behind.z < 0)
+    assert.equal(behind.opacity, 1)
+})
+
+check('G.7', 'the distance to a card is the same in both zoom states', () => {
+    assert.equal(cardLayout(3, 0, 5, 0).distance, cardLayout(3, 0, 5, 1).distance)
+    const only = cardLayout(0, 0, 1, 0)
+    assert.equal(only.distance, 0)
+    assert.equal(only.scale, 1)
+    assert.equal(only.opacity, 1)
 })

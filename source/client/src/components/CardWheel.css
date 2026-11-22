@@ -1,0 +1,113 @@
+/* Card wheel: the small cards on the left of the screen, lying on an arc.
+   The anchor sits 200px from the left of the column, so a card that leaves
+   the middle of the arc moves back to the left, fades and blurs. */
+
+.card-wheel {
+    /* The anchor sits at the right edge of the column, so the card that is in
+       focus is complete and the cards around it move back to the left. The
+       circle they stand on is far bigger than the column, so its middle is
+       off the screen on the left. */
+    --card-wheel-inset: calc(100% - 150px);
+
+    position: relative;
+    width: 100%;
+    height: 360px;
+    overflow: hidden;
+    outline: none;
+    cursor: grab;
+    user-select: none;
+    touch-action: none;
+}
+
+.card-wheel:focus-visible {
+    outline: 2px solid var(--rl-accent, #3d8bff);
+    outline-offset: -2px;
+}
+
+.card-wheel--dragging {
+    cursor: grabbing;
+}
+
+/* The wheel can live outside the frame of the application, so the dark theme
+   carries its own values. */
+.card-wheel[data-theme='Dark'] {
+    --rl-surface: #101014;
+    --rl-ink: #f4f4f5;
+    --rl-ink-muted: #a1a1aa;
+    --rl-line: rgba(255, 255, 255, 0.16);
+}
+
+/* Every card is placed by its transform, so the wheel can turn as one. */
+.card-wheel__card {
+    position: absolute;
+    top: 50%;
+    left: var(--card-wheel-inset);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 150px;
+    height: 56px;
+    padding: 0 10px;
+    box-sizing: border-box;
+    background: var(--rl-surface, #ffffff);
+    border: 1px solid var(--rl-line, rgba(24, 24, 27, 0.14));
+    border-radius: 12px;
+    box-shadow: 0 6px 16px -10px rgba(24, 24, 27, 0.45);
+    color: var(--rl-ink, #18181b);
+    transform-origin: left center;
+    cursor: pointer;
+    will-change: transform, opacity, filter;
+    transition: transform 220ms cubic-bezier(0.22, 0.61, 0.36, 1), opacity 220ms ease, filter 220ms ease;
+}
+
+/* A card that follows the finger must not lag behind it. */
+.card-wheel--dragging .card-wheel__card {
+    transition: none;
+}
+
+.card-wheel__card--active {
+    border: 2px solid var(--rl-accent, #3d8bff);
+}
+
+.card-wheel__icon {
+    display: inline-flex;
+    flex: none;
+    color: var(--rl-ink-muted, #6b7280);
+}
+
+.card-wheel__title {
+    flex: 1;
+    min-width: 0;
+    font-size: 13px;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.card-wheel__status {
+    flex: none;
+    width: 8px;
+    height: 8px;
+    box-sizing: border-box;
+    border-radius: 50%;
+}
+
+.card-wheel__status--mastered {
+    background: #16a34a;
+}
+
+.card-wheel__status--unmastered {
+    background: #dc2626;
+}
+
+.card-wheel__status--unmarked {
+    background: transparent;
+    border: 1.5px solid var(--rl-ink-muted, #6b7280);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .card-wheel__card {
+        transition: none;
+    }
+}

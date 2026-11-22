@@ -58,3 +58,12 @@ export async function callApi(name, params = {}) {
 
     return { data }
 }
+
+// The favorite flag of a card. The database function is api_set_favorite and
+// it returns the card that was changed.
+export async function apiSetFavorite(cardId, favorite) {
+    return callApi('api_set_favorite', {
+        p_id: cardId,
+        p_favorite: favorite,
+    })
+}

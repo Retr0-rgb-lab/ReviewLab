@@ -1,0 +1,599 @@
+/*
+ * The file view: the top bar, the three columns and the pieces that belong to
+ * them.
+ *
+ * The colours come from the variables of the application, so the dark theme
+ * follows without a second set of rules. The green and the red of the mastery
+ * buttons are the two colours of the states themselves.
+ */
+
+.file-view--panel {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    box-sizing: border-box;
+    height: calc(100vh - 48px);
+    min-height: 560px;
+    /* Clears the fixed dock. Border-box keeps this inside the desktop height
+       so the columns shrink instead of the page growing a second scroll. */
+    padding-bottom: 96px;
+    color: var(--rl-ink);
+}
+
+/* ------------------------------------------------------------- the top bar */
+
+.file-view__topbar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex: none;
+}
+
+/* The search button is a white capsule with a thin line of a magnifier. */
+.file-view__search {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 36px;
+    padding: 0 16px;
+    border: 1px solid var(--rl-line);
+    border-radius: 999px;
+    background: var(--rl-surface);
+    color: var(--rl-ink);
+    font: inherit;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background-color 160ms ease, color 160ms ease;
+}
+
+.file-view__search:hover {
+    background: var(--rl-surface-raised);
+    color: var(--rl-ink-muted);
+}
+
+.file-view__search:focus-visible {
+    outline: 2px solid var(--rl-accent);
+    outline-offset: 2px;
+}
+
+.file-view__identity {
+    flex: 1;
+    min-width: 0;
+}
+
+.file-view__name {
+    margin: 0;
+    font-family: sans-serif;
+    font-size: 34px;
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--rl-ink);
+    /* Break on spaces so a level name is not split inside a word. */
+    overflow-wrap: normal;
+    cursor: text;
+}
+
+.file-view__name-input {
+    width: 100%;
+    box-sizing: border-box;
+    font-family: sans-serif;
+    font-size: 34px;
+    font-weight: 600;
+    line-height: 1.2;
+    padding: 2px 6px;
+    border: 1px solid var(--rl-accent);
+    border-radius: 8px;
+    background: var(--rl-surface);
+    color: var(--rl-ink);
+}
+
+.file-view__meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 6px 0 0;
+    font-size: 0.85rem;
+    color: var(--rl-ink-muted);
+}
+
+.file-view__breadcrumb {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.file-view__crumb {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.file-view__crumb-link {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--rl-ink-muted);
+    font: inherit;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+}
+
+.file-view__crumb-link:hover {
+    color: var(--rl-accent);
+}
+
+.file-view__crumb-link:focus-visible {
+    outline: 2px solid var(--rl-accent);
+    outline-offset: 2px;
+}
+
+.file-view__crumb-current {
+    color: var(--rl-ink);
+}
+
+.file-view__crumb-sep {
+    color: var(--rl-ink-muted);
+}
+
+.file-view__dot {
+    color: var(--rl-ink-muted);
+}
+
+.file-view__counts {
+    color: var(--rl-ink-muted);
+    white-space: nowrap;
+}
+
+/* The theme switch. The knob on the left is the light theme. */
+.file-view__theme {
+    position: relative;
+    flex: none;
+    width: 52px;
+    height: 28px;
+    padding: 0;
+    border: 1px solid var(--rl-line);
+    border-radius: 999px;
+    background: var(--rl-surface);
+    cursor: pointer;
+}
+
+.file-view__theme-knob {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--rl-ink);
+    transition: transform 180ms ease;
+}
+
+.file-view__theme[data-dark='true'] .file-view__theme-knob {
+    transform: translateX(24px);
+}
+
+.file-view__theme:focus-visible {
+    outline: 2px solid var(--rl-accent);
+    outline-offset: 2px;
+}
+
+/* -------------------------------------------------------------- the columns */
+
+.file-view__columns {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 288px minmax(0, 1fr) 64px;
+    gap: 16px;
+}
+
+.file-view__left {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* The folders of the level, one row each. */
+.file-view__folders {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.file-view__folder-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.file-view__folder-button {
+    flex: 1;
+    min-width: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--rl-ink);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background-color 160ms ease;
+}
+
+.file-view__folder-button:hover {
+    background: var(--rl-surface-raised);
+}
+
+.file-view__folder-button:focus-visible {
+    outline: 2px solid var(--rl-accent);
+    outline-offset: -2px;
+}
+
+.file-view__folder-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.file-view__folder-input {
+    flex: 1;
+    min-width: 0;
+    font: inherit;
+    padding: 6px 8px;
+    border: 1px solid var(--rl-accent);
+    border-radius: 8px;
+    background: var(--rl-surface);
+    color: var(--rl-ink);
+}
+
+.file-view__folder-delete {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--rl-ink-muted);
+    cursor: pointer;
+    transition: color 160ms ease, background-color 160ms ease;
+}
+
+.file-view__folder-delete:hover {
+    color: var(--rl-danger);
+    background: var(--rl-surface-raised);
+}
+
+.file-view__folder-delete:focus-visible {
+    outline: 2px solid var(--rl-danger);
+    outline-offset: 1px;
+}
+
+/* The cards of the level in the middle. */
+.file-view__center {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    overflow-y: auto;
+    padding-bottom: 96px;
+    border: 1px solid var(--rl-line);
+    border-radius: 18px;
+    background: var(--rl-surface-raised);
+}
+
+.file-view__center > .arc-gallery {
+    flex: 1 1 auto;
+    height: auto;
+    min-height: 320px;
+}
+
+.file-view__center-message {
+    margin: auto;
+    padding: 24px;
+}
+
+.file-view__center .state {
+    margin: 24px;
+}
+
+/* The rail of the favorites on the right. */
+.file-view__right {
+    display: flex;
+    justify-content: flex-end;
+    min-width: 0;
+}
+
+/* ------------------------------------------------------- the mastery buttons */
+
+.file-view__mastery {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.file-view__mastery-button {
+    padding: 6px 14px;
+    border: 1px solid var(--rl-line);
+    border-radius: 999px;
+    background: var(--rl-surface-raised);
+    color: var(--rl-ink-muted);
+    font: inherit;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease;
+}
+
+.file-view__mastery-button:hover {
+    border-color: currentColor;
+}
+
+.file-view__mastery-button:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+}
+
+.file-view__mastery-button--mastered[aria-pressed='true'] {
+    color: #16a34a;
+    border-color: #16a34a;
+    background: rgba(22, 163, 74, 0.12);
+}
+
+.file-view__mastery-button--unmastered[aria-pressed='true'] {
+    color: #dc2626;
+    border-color: #dc2626;
+    background: rgba(220, 38, 38, 0.12);
+}
+
+/* ---------------------------------------------------------- the empty level */
+
+.file-view__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin: auto;
+    padding: 24px;
+    text-align: center;
+}
+
+.file-view__empty-text {
+    margin: 0;
+    color: var(--rl-ink-muted);
+}
+
+.file-view__button--primary {
+    border-color: var(--rl-accent);
+    background: var(--rl-accent);
+    color: #ffffff;
+}
+
+/* ------------------------------------------------------ the create menu */
+
+.file-view__menu-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 38;
+}
+
+.file-view__create-menu {
+    position: fixed;
+    left: 50%;
+    bottom: 104px;
+    z-index: 39;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 180px;
+    padding: 6px;
+    border: 1px solid var(--rl-line);
+    border-radius: 14px;
+    background: var(--rl-surface);
+    box-shadow: 0 20px 44px -24px rgba(0, 0, 0, 0.5);
+    transform: translateX(-50%);
+}
+
+.file-view__create-item {
+    padding: 8px 12px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--rl-ink);
+    font: inherit;
+    font-size: 0.9rem;
+    text-align: left;
+    cursor: pointer;
+}
+
+.file-view__create-item:hover {
+    background: var(--rl-surface-raised);
+}
+
+.file-view__create-item:focus-visible {
+    outline: 2px solid var(--rl-accent);
+    outline-offset: -2px;
+}
+
+/* ------------------------------------------------- the name of a new folder */
+
+.file-view__prompt-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: var(--rl-scrim, rgba(24, 24, 27, 0.32));
+}
+
+.file-view__prompt {
+    width: min(400px, 100%);
+    padding: 20px;
+    border: 1px solid var(--rl-line);
+    border-radius: 12px;
+    background: var(--rl-surface);
+    color: var(--rl-ink);
+}
+
+.file-view__prompt-title {
+    margin: 0 0 12px;
+    font-size: 1.05rem;
+}
+
+.file-view__prompt-input {
+    width: 100%;
+    box-sizing: border-box;
+    font: inherit;
+    padding: 8px 10px;
+    border: 1px solid var(--rl-line);
+    border-radius: 8px;
+    background: var(--rl-surface);
+    color: var(--rl-ink);
+}
+
+.file-view__prompt-input:focus-visible {
+    outline: 2px solid var(--rl-accent);
+    outline-offset: 1px;
+}
+
+.file-view__prompt-error {
+    margin: 8px 0 0;
+    color: var(--rl-danger);
+    font-size: 0.85rem;
+}
+
+.file-view__prompt-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+/* ------------------------------------------------------------ narrow screens */
+
+@media (max-width: 1100px) {
+    .file-view__columns {
+        grid-template-columns: 248px minmax(0, 1fr) 64px;
+    }
+}
+
+@media (max-width: 900px) {
+    .file-view--panel {
+        height: auto;
+        min-height: 0;
+    }
+
+    /* The left column folds onto the first row. The card and the rail share
+       the next row, and the rail stays a 64px edge beside the card. */
+    .file-view__columns {
+        grid-template-columns: minmax(0, 1fr) 64px;
+    }
+
+    .file-view__left {
+        grid-column: 1 / -1;
+        grid-row: 1;
+    }
+
+    .file-view__center {
+        grid-column: 1;
+        grid-row: 2;
+        /* Tall enough for one card, and no taller, so the card is not
+           centered down into the fixed dock. */
+        height: 460px;
+    }
+
+    .file-view__center > .arc-gallery {
+        height: 100%;
+        min-height: 0;
+    }
+
+    .file-view__center .arc-gallery__card {
+        top: 8px;
+        margin-top: 0;
+    }
+
+    .file-view__right {
+        grid-column: 2;
+        grid-row: 2;
+        justify-content: flex-end;
+        align-items: stretch;
+    }
+
+    .file-view__right .favorites-rail {
+        width: 64px;
+        max-width: 100%;
+        height: 100%;
+    }
+}
+
+@media (max-width: 720px) {
+    /* Search and the theme switch sit on the first row. The level name and
+       its breadcrumb take the full width of the second row. */
+    .file-view__topbar {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: center;
+        column-gap: 16px;
+        row-gap: 8px;
+    }
+
+    .file-view__search {
+        grid-column: 1;
+        grid-row: 1;
+    }
+
+    .file-view__theme {
+        grid-column: 3;
+        grid-row: 1;
+    }
+
+    .file-view__identity {
+        grid-column: 1 / -1;
+        grid-row: 2;
+    }
+
+    .file-view__name,
+    .file-view__name-input {
+        font-size: 26px;
+    }
+
+    /* Shorter than the wheel's own 360px, so the dial sits above the dock. */
+    .file-view .card-wheel {
+        height: 220px;
+    }
+
+    /* The gallery card is 260px. Beside a 64px rail it has to follow the cell
+       so the card stays inside it and the page does not scroll sideways. */
+    .file-view__center .arc-gallery__card {
+        width: min(260px, 100%);
+        margin-left: calc(min(260px, 100%) / -2);
+    }
+}
+
+/* The motion is a comfort, never a requirement. */
+@media (prefers-reduced-motion: reduce) {
+    .file-view__search,
+    .file-view__theme-knob,
+    .file-view__folder-button,
+    .file-view__folder-delete,
+    .file-view__mastery-button {
+        transition: none;
+    }
+}

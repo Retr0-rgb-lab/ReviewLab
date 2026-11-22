@@ -64,6 +64,7 @@ Error codes returned in the message prefix:
 | `NAME_TOO_LONG` | Name or title is longer than 120 characters |
 | `BODY_TOO_LONG` | Body is longer than 4000 characters |
 | `INVALID_MASTERY` | Mastery is not `unmarked`, `mastered` or `unmastered` |
+| `INVALID_FAVORITE` | The favorite flag is not `true` or `false` |
 | `ROOT_DELETE_FORBIDDEN` | The root folder cannot be deleted |
 | `NOT_FOUND` | The target row does not exist |
 | `API_NOT_INSTALLED` | The functions in `api.sql` have not been applied to the database yet |
@@ -91,6 +92,7 @@ These rules live in the database, not in the browser, so they hold for any clien
 | A name or title is trimmed, must not be empty, and is at most 120 characters | `api_check_text` in `api.sql`, plus the check constraints in `schema.sql` |
 | A body is trimmed and at most 4000 characters. An empty body is valid | `api_check_body` in `api.sql`, plus the check constraint in `schema.sql` |
 | Mastery is one of `unmarked`, `mastered`, `unmastered` | `api_check_mastery`, plus the check constraint in `schema.sql` |
+| A card carries a boolean favorite flag, which is independent of the mastery | Column `favorite` in `schema.sql`, set through `api_set_favorite` |
 | The root folder cannot be deleted | `api_delete_folder`, plus the trigger `folders_reject_root_delete` |
 | A folder cannot change its parent | Trigger `folders_reject_parent_change` |
 | A card cannot change its folder | Trigger `cards_reject_folder_change` |
@@ -121,7 +123,8 @@ section.
 | 10 | `POST /rest/v1/rpc/api_rename_card` | `p_id` uuid, `p_title` text | the updated card row | 200, 400, 404 |
 | 11 | `POST /rest/v1/rpc/api_update_card_body` | `p_id` uuid, `p_body` text | the updated card row | 200, 400, 404 |
 | 12 | `POST /rest/v1/rpc/api_set_mastery` | `p_id` uuid, `p_mastery` text | the updated card row | 200, 400, 404 |
-| 13 | `POST /rest/v1/rpc/api_delete_card` | `p_id` uuid | `{ deleted: true }` | 200, 404 |
+| 13 | `POST /rest/v1/rpc/api_set_favorite` | `p_id` uuid, `p_favorite` boolean | the updated card row | 200, 400, 404 |
+| 14 | `POST /rest/v1/rpc/api_delete_card` | `p_id` uuid | `{ deleted: true }` | 200, 404 |
 
 ### 4.1 Reads
 
@@ -134,7 +137,7 @@ one root, enforced by the partial unique index.
 {
   "folder": { "id": "...", "name": "Integration", "parent_id": "...", "ord": 2, "created_at": "...", "updated_at": "..." },
   "folders": [ { "id": "...", "name": "...", "parent_id": "...", "ord": 3, "created_at": "...", "updated_at": "..." } ],
-  "cards": [ { "id": "...", "title": "...", "folder_id": "...", "mastery": "unmarked", "ord": 4, "created_at": "...", "updated_at": "..." } ]
+  "cards": [ { "id": "...", "title": "...", "folder_id": "...", "mastery": "unmarked", "favorite": false, "ord": 4, "created_at": "...", "updated_at": "..." } ]
 }
 ```
 
@@ -144,6 +147,28 @@ in the right order in the one list the file view shows.
 
 `folders` and `cards` are the direct children only. Cards in this response do not
 carry `body`; use `api_get_card` for the card that is being reviewed.
+
+### 4.0 The shape of a card
+
+Every function that returns a card returns the same fields. `favorite` is the
+boolean that says whether the card is a favorite; it is independent of
+`mastery`, which stays one of `unmarked`, `mastered` or `unmastered`.
+
+| Field | Type | In the level list | In the tree and in one card |
+|---|---|---|---|
+| `id` | uuid | yes | yes |
+| `ord` | number | yes | yes |
+| `title` | text | yes | yes |
+| `body` | text | no | yes |
+| `folder_id` | uuid | yes | yes |
+| `mastery` | text | yes | yes |
+| `favorite` | boolean | yes | yes |
+| `created_at` | timestamp | yes | yes |
+| `updated_at` | timestamp | yes | yes |
+
+`api_list_level` is the one that leaves `body` out, because the level list does
+not show the content of a card. Every other function that returns a card
+returns the body as well.
 
 **`api_get_card(p_card)`** returns one card including `body`, used when Focus
 opens a card.
@@ -190,6 +215,13 @@ is valid.
 `mastered` or `unmastered`. The two counters in the interface are counted from
 the card rows, so setting the same value twice leaves the counters unchanged.
 
+**`api_set_favorite(p_id, p_favorite)`** sets the favorite flag of a card to
+`true` or `false`. The flag is a boolean on the card row, next to the mastery,
+and it is independent of the mastery. Setting it writes the row, so `updated_at`
+moves and the card comes to the top of the search results, which are grouped by
+the last change. A `p_favorite` of `null` is refused with `400` and
+`INVALID_FAVORITE`.
+
 **`api_delete_card(p_id)`** deletes one card.
 
 ## 5. Access rules
@@ -217,7 +249,13 @@ Fresh database:
 
 Existing database that already has the tables from an earlier `schema.sql`:
 run `source/database/api.sql` only. It is idempotent and contains a small
-migration block that adds the `ord` column if it is missing.
+migration block that adds the `ord` and `favorite` columns if they are missing.
+
+Existing database that already has the API and needs only the favorite flag:
+run `source/database/migrations/20261122_add_favorite.sql`. It adds the column,
+adds `api_set_favorite`, replaces the functions that return cards so that they
+carry the new field, and grants execute on the new function. It can be run more
+than once.
 
 After applying, the database should answer:
 
@@ -225,5 +263,5 @@ After applying, the database should answer:
 select count(*) from pg_proc where proname like 'api\_%';
 ```
 
-The number must be 17: the thirteen functions of section 4, the three validation
+The number must be 18: the fourteen functions of section 4, the three validation
 helpers of section 3 and the error helper `api_fail`.

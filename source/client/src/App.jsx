@@ -2,6 +2,13 @@
 // layer and the delete confirmation that the three views share.
 //
 // Every read goes through levelActions.js, every write through fileActions.js.
+//
+// There are three views and three kinds of address:
+//   /folder/:folderId/:itemId  the file view, with one card in the middle
+//   /zen/:folderId/:itemId     the zen mode, one card on the whole screen
+//   /stats/:folderId           the numbers of one level
+// The theme switch belongs to the top bar of every view, so the application
+// hands the switch to the views instead of drawing it in a sidebar.
 
 import { Component, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
@@ -16,21 +23,12 @@ import {
 
 import AppShell, { shellOverlay } from './components/AppShell.jsx'
 import SearchPalette from './components/SearchPalette.jsx'
-import Sidebar from './components/Sidebar.jsx'
 import { Theme } from '@astryxdesign/core/theme'
 import { neutralTheme } from '@astryxdesign/theme-neutral/built'
-import FileView, { errorText, orderLevel } from './views/FileView.jsx'
-import FocusView from './views/FocusView.jsx'
+import FileView, { errorText } from './views/FileView.jsx'
+import ZenView from './views/ZenView.jsx'
 import StatsView from './views/StatsView.jsx'
-import {
-    createCard,
-    deleteCard,
-    deleteFolder,
-    removalConfirmText,
-    renameCard,
-    setMastery,
-    updateCardBody,
-} from './views/fileActions.js'
+import { createCard, deleteCard, deleteFolder, removalConfirmText } from './views/fileActions.js'
 import { fetchDeleteImpact, fetchLevel, fetchRootFolder, fetchTree } from './views/levelActions.js'
 import { isSearchShortcut, openSearchResult } from './views/searchActions.js'
 import { runPendingCommit } from './pendingCommit.js'
@@ -114,204 +112,123 @@ function removalSentence(folderCount, cardCount, kind) {
     return sentence || defaultRemovalText(folderCount, cardCount)
 }
 
-function cardBody(tree, cardId, fallback = '') {
-    const cards = (tree && tree.cards) || []
-    const found = cards.find((card) => card.id === cardId)
-    if (!found || typeof found.body !== 'string') {
-        return fallback
-    }
-    return found.body
-}
-
+// The root of the tree. The application opens on the oldest card of the root
+// folder, so the tree is never an empty level on the screen.
 function RootRoute() {
-    const [root, setRoot] = useState(undefined)
-    const [message, setMessage] = useState('')
+    const [state, setState] = useState({ status: 'loading', root: null, firstCardId: null, message: '' })
 
     useEffect(() => {
         let cancelled = false
-        fetchRootFolder()
-            .then((result) => {
-                if (cancelled) {
-                    return
-                }
-                if (!result || result.error) {
-                    setMessage(result && result.error ? errorText(result.error) : '')
-                    setRoot(null)
-                    return
-                }
-                setRoot(result)
-            })
-            .catch((caught) => {
+
+        async function load() {
+            let result = null
+            try {
+                result = await fetchRootFolder()
+            } catch (caught) {
                 if (!cancelled) {
-                    setMessage(caught && caught.message ? caught.message : '')
-                    setRoot(null)
+                    setState({
+                        status: 'empty',
+                        root: null,
+                        firstCardId: null,
+                        message: caught && caught.message ? caught.message : '',
+                    })
                 }
-            })
+                return
+            }
+            if (cancelled) {
+                return
+            }
+            if (!result || result.error) {
+                setState({
+                    status: 'empty',
+                    root: null,
+                    firstCardId: null,
+                    message: result && result.error ? errorText(result.error) : '',
+                })
+                return
+            }
+
+            // The cards of a level come back in the order of their creation,
+            // so the first card of the level is the oldest one.
+            let firstCardId = null
+            try {
+                const level = await fetchLevel(result.id)
+                const cards = (level && level.cards) || []
+                firstCardId = cards.length > 0 ? cards[0].id : null
+            } catch (caught) {
+                // A level that cannot be read still opens, the file view shows
+                // the reason itself.
+                firstCardId = null
+            }
+            if (cancelled) {
+                return
+            }
+            setState({ status: 'ready', root: result, firstCardId, message: '' })
+        }
+
+        load()
         return () => {
             cancelled = true
         }
     }, [])
 
-    if (root === undefined) {
+    if (state.status === 'loading') {
         return <p className="state__message">Loading the tree…</p>
     }
-    if (root === null) {
+    if (state.status === 'empty') {
         return (
             <div className="state state--empty">
                 <p className="state__title">There is no root folder yet.</p>
                 <p className="state__text">
-                    {message || 'The tree starts with one outer folder. Add it in the database, then reload this page.'}
+                    {state.message || 'The tree starts with one outer folder. Add it in the database, then reload this page.'}
                 </p>
             </div>
         )
     }
-    return <Navigate to={`/folder/${root.id}`} replace />
+
+    const target = state.firstCardId
+        ? `/folder/${state.root.id}/${state.firstCardId}`
+        : `/folder/${state.root.id}`
+    return <Navigate to={target} replace />
 }
 
+// The file view of one level. The item of the address may be missing, then
+// the view picks the card of the level itself.
 function FileRoute(props) {
-    const { folderId } = useParams()
-    return <FileView {...props} folderId={folderId} />
+    const { folderId, itemId } = useParams()
+    return (
+        <FileView
+            folderId={folderId}
+            itemId={itemId}
+            theme={props.theme}
+            dataVersion={props.dataVersion}
+            onOpenSearch={props.onOpenSearch}
+            onRequestDelete={props.onRequestDelete}
+            onError={props.onError}
+            onClearError={props.onClearError}
+            onDataChanged={props.onDataChanged}
+            onLevelReady={props.onLevelReady}
+            onToggleTheme={props.onToggleTheme}
+        />
+    )
 }
 
-function FocusRoute(props) {
+// The zen mode of one level. The item of the address is optional, the mode
+// can open without a card.
+function ZenRoute(props) {
     const { folderId, itemId } = useParams()
-    const navigate = useNavigate()
-    const [state, setState] = useState({ status: 'loading', message: '' })
-    const loadedKey = useRef(null)
-
-    useEffect(() => {
-        let cancelled = false
-        const key = `${folderId}|${itemId}`
-        const silent = loadedKey.current === key
-        loadedKey.current = key
-        if (!silent) {
-            setState({ status: 'loading', message: '' })
-        }
-
-        // The level gives the order of the items, the tree gives the body of
-        // the card that is being reviewed.
-        Promise.all([fetchLevel(folderId), fetchTree()])
-            .then(([level, tree]) => {
-                if (cancelled) {
-                    return
-                }
-                if (!level || level.error) {
-                    setState({
-                        status: 'error',
-                        message: errorText(level && level.error, 'This level could not be loaded.'),
-                    })
-                    return
-                }
-                const items = orderLevel(level.folders, level.cards)
-                const index = items.findIndex((entry) => entry.id === itemId)
-                const item = index >= 0 ? items[index] : null
-                const withBody = item && item.kind === 'card'
-                    ? { ...item, body: cardBody(tree, item.id, item.body) }
-                    : item
-                setState({ status: 'ready', level, items, index, item: withBody })
-                props.onLevelReady(folderId, true)
-            })
-            .catch((caught) => {
-                if (cancelled) {
-                    return
-                }
-                setState({
-                    status: 'error',
-                    message: caught && caught.message ? caught.message : 'This level could not be loaded.',
-                })
-            })
-
-        return () => {
-            cancelled = true
-        }
-    }, [folderId, itemId, props.dataVersion])
-
-    async function commitTitle(cardId, title) {
-        const result = await renameCard(cardId, title)
-        if (result && result.error) {
-            props.onError(errorText(result.error))
-            return result
-        }
-        props.onClearError()
-        props.onDataChanged()
-        return result
-    }
-
-    async function commitBody(cardId, body) {
-        const result = await updateCardBody(cardId, body)
-        if (result && result.error) {
-            props.onError(errorText(result.error))
-            return result
-        }
-        props.onClearError()
-        props.onDataChanged()
-        return result
-    }
-
-    async function commitMastery(cardId, mastery) {
-        const result = await setMastery(cardId, mastery)
-        if (result && result.error) {
-            props.onError(errorText(result.error))
-            return result
-        }
-        props.onClearError()
-        props.onDataChanged()
-        return result
-    }
-
-    if (state.status === 'loading') {
-        return <p className="state__message">Loading this item…</p>
-    }
-    if (state.status === 'error') {
-        return (
-            <div className="state state--error">
-                <p className="state__title">This item could not be opened.</p>
-                <p className="state__text">{state.message}</p>
-            </div>
-        )
-    }
-    if (!state.item) {
-        return (
-            <div className="state state--empty">
-                <p className="state__title">This item is not in this level.</p>
-                <p className="state__text">Open the level again to pick an item.</p>
-            </div>
-        )
-    }
-
-    const cards = (state.level && state.level.cards) || []
-    const masteredCount = cards.filter((card) => card.mastery === 'mastered').length
-    const unmasteredCount = cards.filter((card) => card.mastery === 'unmastered').length
-
     return (
-        <FocusView
-            folder={state.level.folder}
-            item={state.item}
-            items={state.items}
-            index={state.index}
-            masteredCount={masteredCount}
-            unmasteredCount={unmasteredCount}
-            onCommitTitle={commitTitle}
-            onCommitBody={commitBody}
-            onCommitMastery={commitMastery}
-            onNavigate={(itemIndex) => {
-                const target = state.items[itemIndex]
-                if (target) {
-                    navigate(`/focus/${folderId}/${target.id}`)
-                }
-            }}
-            onOpenFolder={(item) => navigate(`/folder/${item.id}`)}
-            onExit={() => {
-                // The escape key returns to the file view of the level above.
-                // At the outermost folder there is no level above, so Focus
-                // stays where it is.
-                const parentId = state.level && state.level.folder
-                    ? state.level.folder.parent_id
-                    : null
-                if (parentId) {
-                    navigate(`/folder/${parentId}`)
-                }
-            }}
+        <ZenView
+            folderId={folderId}
+            itemId={itemId}
+            theme={props.theme}
+            dataVersion={props.dataVersion}
+            onOpenSearch={props.onOpenSearch}
+            onToggleTheme={props.onToggleTheme}
+            onDataChanged={props.onDataChanged}
+            onError={props.onError}
+            onClearError={props.onClearError}
+            onLevelReady={props.onLevelReady}
         />
     )
 }
@@ -376,7 +293,12 @@ function StatsRoute(props) {
         <StatsView
             folder={state.level.folder}
             cards={state.level.cards || []}
-            onOpenCard={(cardId) => navigate(`/focus/${folderId}/${cardId}`)}
+            folderId={folderId}
+            theme={props.theme}
+            dataVersion={props.dataVersion}
+            onOpenSearch={props.onOpenSearch}
+            onToggleTheme={props.onToggleTheme}
+            onOpenCard={(cardId) => navigate(`/zen/${folderId}/${cardId}`)}
         />
     )
 }
@@ -392,11 +314,16 @@ function ReviewLab() {
     const [pendingDelete, setPendingDelete] = useState(null)
     const [readyFolders, setReadyFolders] = useState({})
 
+    // The folder of the current address, whatever view is on the screen.
+    const folderItemMatch = useMatch('/folder/:folderId/:itemId')
     const folderMatch = useMatch('/folder/:folderId')
-    const focusMatch = useMatch('/focus/:folderId/:itemId')
+    const zenItemMatch = useMatch('/zen/:folderId/:itemId')
+    const zenMatch = useMatch('/zen/:folderId')
     const statsMatch = useMatch('/stats/:folderId')
-    const currentFolderId = (folderMatch && folderMatch.params.folderId)
-        || (focusMatch && focusMatch.params.folderId)
+    const currentFolderId = (folderItemMatch && folderItemMatch.params.folderId)
+        || (folderMatch && folderMatch.params.folderId)
+        || (zenItemMatch && zenItemMatch.params.folderId)
+        || (zenMatch && zenMatch.params.folderId)
         || (statsMatch && statsMatch.params.folderId)
         || null
 
@@ -404,8 +331,8 @@ function ReviewLab() {
         storeTheme(theme)
     }, [theme])
 
-    // The tree feeds the sidebar and the search. It is read again after a
-    // write so that both show the current state.
+    // The tree feeds the search. It is read again after a write so that the
+    // results show the current state.
     useEffect(() => {
         let cancelled = false
         fetchTree()
@@ -448,6 +375,11 @@ function ReviewLab() {
 
     const clearError = useCallback(() => {
         setError('')
+    }, [])
+
+    // The theme switch of the top bar of the three views.
+    const toggleTheme = useCallback(() => {
+        setTheme((current) => (current === 'Dark' ? 'White' : 'Dark'))
     }, [])
 
     const onLevelReady = useCallback((folderId, ready) => {
@@ -511,21 +443,6 @@ function ReviewLab() {
     // grouping, the application only opens the row that was chosen.
     const rows = useMemo(() => searchRows(tree), [tree])
 
-    // The branch menu of the sidebar: the root folder and its children.
-    const menuItems = useMemo(() => {
-        const folders = tree.folders || []
-        const root = folders.find((folder) => !folder.parent_id)
-        if (!root) {
-            return []
-        }
-        return [{
-            label: root.name,
-            children: folders
-                .filter((folder) => folder.parent_id === root.id)
-                .map((folder) => ({ value: folder.id, label: folder.name })),
-        }]
-    }, [tree])
-
     const confirmSearchResult = useCallback((row) => {
         closeSearch()
         const target = openSearchResult(row)
@@ -536,8 +453,9 @@ function ReviewLab() {
             navigate(`/folder/${target.folderId}`)
             return
         }
-        navigate(`/focus/${target.folderId}/${target.cardId}`)
+        navigate(`/zen/${target.folderId}/${target.cardId}`)
     }, [navigate, closeSearch])
+
     // The root folder of the tree. The delete confirmation needs it, so it is
     // found before the callbacks that read it.
     const rootFolderId = useMemo(() => {
@@ -609,8 +527,10 @@ function ReviewLab() {
         }
     }, [pendingDelete, currentFolderId, rootFolderId, navigate])
 
+    // A new card opens in the zen mode, where its title and its body are
+    // written.
     const createCardInLevel = useCallback(async () => {
-        if (!currentFolderId) {
+        if (!currentFolderId || !readyFolders[currentFolderId]) {
             return
         }
         let result = null
@@ -626,10 +546,8 @@ function ReviewLab() {
         }
         setError('')
         setDataVersion((version) => version + 1)
-        navigate(`/focus/${currentFolderId}/${result.card.id}`)
-    }, [currentFolderId, navigate])
-
-    const levelReady = Boolean(currentFolderId && readyFolders[currentFolderId])
+        navigate(`/zen/${currentFolderId}/${result.card.id}`)
+    }, [currentFolderId, readyFolders, navigate])
 
     const shared = {
         theme,
@@ -640,19 +558,8 @@ function ReviewLab() {
         onClearError: clearError,
         onDataChanged: onDataChanged,
         onLevelReady: onLevelReady,
+        onToggleTheme: toggleTheme,
     }
-
-    const sidebar = (
-        <Sidebar
-            items={menuItems}
-            onSelect={(value) => navigate(`/folder/${value}`)}
-            theme={theme}
-            onToggleTheme={() => setTheme((current) => current === 'Dark' ? 'White' : 'Dark')}
-            onOpenSearch={openSearch}
-            onCreateCard={createCardInLevel}
-            createCardDisabled={!levelReady}
-        />
-    )
 
     const searchPalette = (
         <SearchPalette
@@ -700,7 +607,7 @@ function ReviewLab() {
     return (
         <Theme theme={neutralTheme} mode={theme === 'Dark' ? 'dark' : 'light'}>
             <div className={`app-root app-root--${theme === 'Dark' ? 'dark' : 'white'}`} data-theme={theme}>
-                <AppShell sidebar={sidebar} overlay={<LayerBoundary>{overlay}</LayerBoundary>}>
+                <AppShell overlay={<LayerBoundary>{overlay}</LayerBoundary>}>
                     {error ? (
                         <div className="app-error" role="alert">
                             <span className="app-error__message">{error}</span>
@@ -712,7 +619,9 @@ function ReviewLab() {
                     <Routes>
                         <Route path="/" element={<RootRoute />} />
                         <Route path="/folder/:folderId" element={<FileRoute {...shared} />} />
-                        <Route path="/focus/:folderId/:itemId" element={<FocusRoute {...shared} />} />
+                        <Route path="/folder/:folderId/:itemId" element={<FileRoute {...shared} />} />
+                        <Route path="/zen/:folderId" element={<ZenRoute {...shared} />} />
+                        <Route path="/zen/:folderId/:itemId" element={<ZenRoute {...shared} />} />
                         <Route path="/stats/:folderId" element={<StatsRoute {...shared} />} />
                         <Route path="*" element={<Navigate to="/" replace />} />
                     </Routes>

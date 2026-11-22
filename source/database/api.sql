@@ -61,6 +61,18 @@ begin
             add column ord bigint not null default nextval('public.reviewlab_ord_seq');
     end if;
 
+    -- The favorite flag of a card. The column may already exist, so it is
+    -- only added when it is missing.
+    if not exists (
+        select 1 from information_schema.columns
+        where table_schema = 'public'
+          and table_name = 'cards'
+          and column_name = 'favorite'
+    ) then
+        alter table cards
+            add column favorite boolean not null default false;
+    end if;
+
     -- The column may already exist with the default of an older per table
     -- sequence. Point it at the shared one either way.
     execute 'alter table folders alter column ord set default nextval(''public.reviewlab_ord_seq'')';
@@ -271,6 +283,7 @@ begin
                 'title', c.title,
                 'folder_id', c.folder_id,
                 'mastery', c.mastery,
+                'favorite', c.favorite,
                 'created_at', c.created_at,
                 'updated_at', c.updated_at
             )
@@ -321,6 +334,7 @@ begin
         'body', v_row.body,
         'folder_id', v_row.folder_id,
         'mastery', v_row.mastery,
+        'favorite', v_row.favorite,
         'created_at', v_row.created_at,
         'updated_at', v_row.updated_at
     );
@@ -367,6 +381,7 @@ begin
                 'body', c.body,
                 'folder_id', c.folder_id,
                 'mastery', c.mastery,
+                'favorite', c.favorite,
                 'created_at', c.created_at,
                 'updated_at', c.updated_at
             )
@@ -577,6 +592,7 @@ begin
         'body', v_row.body,
         'folder_id', v_row.folder_id,
         'mastery', v_row.mastery,
+        'favorite', v_row.favorite,
         'created_at', v_row.created_at,
         'updated_at', v_row.updated_at
     );
@@ -612,6 +628,7 @@ begin
         'body', v_row.body,
         'folder_id', v_row.folder_id,
         'mastery', v_row.mastery,
+        'favorite', v_row.favorite,
         'created_at', v_row.created_at,
         'updated_at', v_row.updated_at
     );
@@ -647,6 +664,7 @@ begin
         'body', v_row.body,
         'folder_id', v_row.folder_id,
         'mastery', v_row.mastery,
+        'favorite', v_row.favorite,
         'created_at', v_row.created_at,
         'updated_at', v_row.updated_at
     );
@@ -693,6 +711,59 @@ begin
         'body', v_row.body,
         'folder_id', v_row.folder_id,
         'mastery', v_row.mastery,
+        'favorite', v_row.favorite,
+        'created_at', v_row.created_at,
+        'updated_at', v_row.updated_at
+    );
+end;
+$$;
+
+-- api_set_favorite: set the favorite flag of a card.
+--
+-- The flag is a boolean on the card row, next to the mastery. Setting it
+-- writes the row, so updated_at moves and the card comes to the top of the
+-- search results, which are grouped by the last change.
+--
+-- The caller is the anon role, which has no grant on the tables, so the
+-- function runs as its owner and is the only way in.
+create or replace function api_set_favorite(p_id uuid, p_favorite boolean)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+    v_row cards%rowtype;
+begin
+    if p_favorite is null then
+        perform api_fail(
+            400,
+            'INVALID_FAVORITE',
+            'Favorite must be true or false.'
+        );
+    end if;
+
+    select c.* into v_row
+    from cards c
+    where c.id = p_id;
+
+    if not found then
+        perform api_fail(404, 'NOT_FOUND', 'That card does not exist.');
+    end if;
+
+    update cards c
+    set favorite = p_favorite
+    where c.id = p_id
+    returning * into v_row;
+
+    return jsonb_build_object(
+        'id', v_row.id,
+        'ord', v_row.ord,
+        'title', v_row.title,
+        'body', v_row.body,
+        'folder_id', v_row.folder_id,
+        'mastery', v_row.mastery,
+        'favorite', v_row.favorite,
         'created_at', v_row.created_at,
         'updated_at', v_row.updated_at
     );

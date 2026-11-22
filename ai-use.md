@@ -52,6 +52,15 @@ components were filled in.
 | Grok | `source/client/src/index.css` | Sans-serif size for the current-level heading only. |
 | Grok | `source/client/src/views/FileView.jsx` | `onRenameLevel` awaited `commitLevelTitle` and used its folder result. |
 | Grok | `source/client/src/components/FileToolbar.jsx` | Removed the duplicate heading style object. The font stays in `index.css`. The file was removed on 20 November 2026. |
+| Grok | `docs/specs/2026-11-21-reviewlab-file-overview-spec.md` | 2026-11-22. Added section 19, the file-view problem list from a Chrome DevTools pass. A later note records which of those items were fixed. |
+| Grok | `source/client/src/components/ArcGallery.jsx` | 2026-11-22. Enter flips the focused card, a flick follows the pointer, and `flipRequest` flips the active card. |
+| Grok | `source/client/src/components/ArcGallery.css` | 2026-11-22. The card face uses border-box so the question is not clipped. Mastery buttons sit on the card, outside the flip control. |
+| Grok | `source/client/src/views/FileView.css` | 2026-11-22. Narrow layout: two-row top bar, shorter wheel, rail beside the card, room under the fixed dock, card aligned to the top of its cell. |
+| Grok | `source/client/src/views/FileView.jsx` | 2026-11-22. Stale level no longer rewrites the address. Zen opens on the current card. Wheel re-click flips. Window scroll hides the dock. A new card opens in the edit panel. |
+| Grok | `source/client/src/views/ZenView.jsx` | 2026-11-22. Reads the card id handed over in history state, without putting it in the address. |
+| Grok | `source/client/src/components/CardWheel.jsx` | 2026-11-22. Clicking the already selected card calls `onActiveClick`. |
+| Grok | `source/client/src/views/fileActions.js` | 2026-11-22. Delete confirmation states both the folder count and the card count. |
+| Grok | `source/tests/cases.mjs` | 2026-11-22. U.2 expects both counts, including zero folders. |
 
 ## MiniMax Code, 20 November 2026
 
@@ -100,6 +109,26 @@ The API layer and the components that were still empty.
 | MiniMax Code | `source/client/index.html` | The tag that tells a phone how wide the page is, and the icon of the page, so that the browser does not ask for a file that is not there. |
 | MiniMax Code | `.gitignore` | `dist` was added, so the build output stays out of the repository. The `docs` rule was changed earlier, so that the product spec is published and the course requirements are not. |
 
+## MiniMax Code, 21 November 2026
+
+The visual pass of the file view and one design mockup.
+
+| Tool | File | Purpose |
+|---|---|---|
+| MiniMax Code | `docs/articrafts/before-fileview-1440.png`, `docs/articrafts/before-fileview-360.png` | Two screenshots of the running application, taken during the visual pass of 21 November 2026 that the earlier section had left out. They show the file view at a desktop width and at 360px. |
+| MiniMax Code | `docs/articrafts/reviewlab-normal-view-mockup.jpg` | A design mockup of the proposed file view. It was generated with the image-generation tool from the hand-drawn sketch of the student, so that the layout could be discussed as a picture. It is a design artefact, not application code, and it is not part of the submitted application. |
+| MiniMax Code | `docs/specs/2026-11-21-reviewlab-file-overview-spec.md` | The specification of the new file overview interface: the layout of the ordinary view, the zen mode, the statistics view, the shared card gallery, the card flip, the mastery dial and its geometry, the dock, the data change and the routes. It records the decisions that were taken while the student and the assistant discussed the design. |
+| MiniMax Code | `docs/specs/2026-11-12-reviewlab-requirements.md` | The sections on the components and on the assessment table were rewritten on 21 November 2026, because the course now accepts AI generated code and no longer requires a part of the application to be written by hand. The other sections were not changed. |
+| MiniMax Code | `source/client/src/components/CardMenu.jsx` | The comment that explained why the search layer is not built on the design system. It named the rule that was removed from the specification, so it was rewritten to give the technical reason instead. The code of the component was not changed. |
+| MiniMax Code | `source/database/schema.sql` | The column `favorite` on the cards table, so a card can be marked as a favourite apart from its mastery. |
+| MiniMax Code | `source/database/api.sql` | The field `favorite` in the answer of every function that returns cards, and the new function `api_set_favorite`, which is written like `api_set_mastery`. |
+| MiniMax Code | `source/database/migrations/20261122_add_favorite.sql` | A migration that adds the column, replaces the card functions and grants the new function. It can be run more than once. It was applied to the live project on 22 November 2026. |
+| MiniMax Code | `source/server/policies.sql` | The grant of `api_set_favorite` to the anon role, in the same block as the grants of the other functions. |
+| MiniMax Code | `source/client/src/api.js` | The wrapper `apiSetFavorite` around the new database function. |
+| MiniMax Code | `source/client/src/views/fileActions.js` | The write `setFavorite`, next to `setMastery`, with the same shape and the same error handling. |
+| MiniMax Code | `source/API.md` | The endpoint `api_set_favorite` in the endpoint table, its description, and the note that the answer of a card carries the field `favorite`. |
+| MiniMax Code | `source/tests/cases.mjs` | The import of the renamed view file. The view Focus is now called the zen mode, so the path changed. |
+
 ## How the code was verified
 
 The specification and the assessment guide ask how the AI written code was
@@ -141,7 +170,7 @@ checked. These are the checks that were run.
 | React Bits: Branched Menu | `source/client/src/components/react-bits/BranchedMenu.jsx` | David Haz | MIT + Commons Clause, same terms. |
 | React Bits: Shape Grid | `source/client/src/components/react-bits/ShapeGrid.jsx`, `ShapeGrid.css` | David Haz | MIT + Commons Clause, same terms. |
 | Hugeicons | `node_modules/@hugeicons/react`, `@hugeicons/core-free-icons` | Hugeicons | MIT. The free package only, the Pro styles are not used. |
-| Astryx | `node_modules/@astryxdesign/core`, `@astryxdesign/theme-neutral` | Meta | MIT. The DropdownMenu of the card corner menu and the theme that goes with it. The search layer is not built on it, because the product specification asks for the search to be written by hand. |
+| Astryx | `node_modules/@astryxdesign/core`, `@astryxdesign/theme-neutral` | Meta | MIT. The DropdownMenu of the card corner menu and the theme that goes with it. The search layer is not built on it, because its groups by day, its path line and its own keyboard handling are specific to this application. |
 | StyleX | `node_modules/@stylexjs/stylex` | Meta | MIT. The compiler that the Astryx components are built with. |
 | React, React DOM, React Router | `node_modules` | Meta, Remix Software | MIT |
 | Supabase JavaScript client | `node_modules/@supabase/supabase-js` | Supabase | MIT |

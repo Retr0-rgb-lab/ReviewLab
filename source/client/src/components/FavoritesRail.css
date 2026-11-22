@@ -1,0 +1,71 @@
+/* Favorites rail: the narrow column on the right of the screen.
+   The rail holds two buttons, the favorite count above and the entry to the
+   zen mode below. The colours come from the variables of the application. */
+
+.favorites-rail {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    align-self: stretch;
+    gap: 20px;
+    width: 64px;
+    padding: 24px 0;
+    box-sizing: border-box;
+    background: var(--rl-surface, #ffffff);
+    border-left: 1px solid var(--rl-line, rgba(24, 24, 27, 0.14));
+    color: var(--rl-ink, #18181b);
+}
+
+/* The rail can live outside the frame of the application, so the dark theme
+   carries its own values. */
+.favorites-rail[data-theme='Dark'] {
+    --rl-surface: #101014;
+    --rl-ink: #f4f4f5;
+    --rl-ink-muted: #a1a1aa;
+    --rl-line: rgba(255, 255, 255, 0.16);
+}
+
+.favorites-rail__button {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    width: 44px;
+    padding: 6px 0;
+    color: var(--rl-ink-muted, #6b7280);
+    background: transparent;
+    border: 0;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: color 160ms ease, background-color 160ms ease;
+}
+
+.favorites-rail__button:hover {
+    color: var(--rl-ink, #18181b);
+    background: rgba(127, 127, 127, 0.14);
+}
+
+.favorites-rail__button:focus-visible {
+    color: var(--rl-ink, #18181b);
+    outline: 2px solid var(--rl-accent, #3d8bff);
+    outline-offset: 2px;
+}
+
+/* The filled star tells that the filter is on. */
+.favorites-rail__button--active {
+    color: var(--rl-accent, #3d8bff);
+}
+
+.favorites-rail__count {
+    font-size: 11px;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .favorites-rail__button {
+        transition: none;
+    }
+}

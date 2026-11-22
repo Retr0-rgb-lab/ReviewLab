@@ -1,0 +1,131 @@
+/*
+ * Dock: the floating action bar at the bottom of the file view.
+ *
+ * The bar is a white capsule with a light border and a soft shadow. It slides
+ * out of the screen at the bottom when it is not visible.
+ */
+
+.dock {
+    position: fixed;
+    left: 50%;
+    bottom: 24px;
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    width: 340px;
+    max-width: calc(100vw - 32px);
+    height: 64px;
+    padding: 0 12px;
+    box-sizing: border-box;
+    border: 1px solid var(--rl-line, rgba(24, 24, 27, 0.14));
+    border-radius: 32px;
+    background: var(--rl-surface, #ffffff);
+    color: var(--rl-ink, #18181b);
+    box-shadow: 0 20px 44px -24px rgba(0, 0, 0, 0.5);
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+    transition: transform 260ms ease, opacity 260ms ease;
+}
+
+/* The bar is off the screen, so it cannot be reached by pointer or by tab. */
+.dock--hidden {
+    transform: translateX(-50%) translateY(120%);
+    opacity: 0;
+    pointer-events: none;
+}
+
+.dock__button {
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    height: 48px;
+    padding: 0;
+    font: inherit;
+    color: var(--rl-ink-muted, #6b7280);
+    background: transparent;
+    border: 0;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: background-color 180ms ease, color 180ms ease;
+}
+
+.dock__button:hover,
+.dock__button:focus-visible {
+    color: var(--rl-ink, #18181b);
+    background: var(--rl-surface-raised, rgba(24, 24, 27, 0.05));
+}
+
+.dock__button:focus-visible {
+    outline: 2px solid var(--rl-accent, #3d8bff);
+    outline-offset: -2px;
+}
+
+/* The icon lifts a little and grows a little on hover. */
+.dock__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 22px;
+    transition: transform 180ms ease;
+}
+
+.dock__button:hover .dock__icon,
+.dock__button:focus-visible .dock__icon {
+    transform: translateY(-2px) scale(1.12);
+}
+
+.dock__label {
+    font-size: 0.68rem;
+    line-height: 1.1;
+    color: var(--rl-ink-muted, #6b7280);
+    white-space: nowrap;
+}
+
+/* The favorite button is solid while the card is a favorite. */
+.dock__button--active,
+.dock__button--active:hover {
+    color: var(--rl-accent, #3d8bff);
+    background: rgba(61, 139, 255, 0.12);
+}
+
+.dock__button--active .dock__label {
+    color: var(--rl-accent, #3d8bff);
+}
+
+/* The bar carries the theme of the application, so it reads the same in both. */
+.dock[data-theme='White'],
+.dock[data-theme='white'] {
+    --rl-surface: #ffffff;
+    --rl-surface-raised: #f6f6f7;
+    --rl-ink: #18181b;
+    --rl-ink-muted: #6b7280;
+    --rl-line: rgba(24, 24, 27, 0.14);
+    --rl-accent: #3d8bff;
+}
+
+.dock[data-theme='Dark'],
+.dock[data-theme='dark'] {
+    --rl-surface: #101014;
+    --rl-surface-raised: #1c1c22;
+    --rl-ink: #f4f4f5;
+    --rl-ink-muted: #a1a1aa;
+    --rl-line: rgba(255, 255, 255, 0.16);
+    --rl-accent: #7aa7ff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .dock,
+    .dock__button,
+    .dock__icon {
+        transition: none;
+    }
+
+    .dock__button:hover .dock__icon,
+    .dock__button:focus-visible .dock__icon {
+        transform: none;
+    }
+}

@@ -83,6 +83,7 @@ grant execute on function api_create_card(uuid) to anon;
 grant execute on function api_rename_card(uuid, text) to anon;
 grant execute on function api_update_card_body(uuid, text) to anon;
 grant execute on function api_set_mastery(uuid, text) to anon;
+grant execute on function api_set_favorite(uuid, boolean) to anon;
 grant execute on function api_delete_card(uuid) to anon;
 
 -- Validation helpers. They only check a value and return the trimmed one.

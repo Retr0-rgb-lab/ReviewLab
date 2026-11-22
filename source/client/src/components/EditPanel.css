@@ -1,0 +1,176 @@
+/*
+ * EditPanel: the side panel that edits the title and the body of one card.
+ *
+ * The panel slides in from the right edge. When it is closed it sits outside
+ * the screen, so it cannot be reached by pointer or by tab.
+ */
+
+.edit-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    z-index: 60;
+    display: flex;
+    flex-direction: column;
+    width: 380px;
+    max-width: 100vw;
+    height: 100vh;
+    box-sizing: border-box;
+    background: var(--rl-surface, #ffffff);
+    color: var(--rl-ink, #18181b);
+    border-left: 1px solid var(--rl-line, rgba(24, 24, 27, 0.14));
+    box-shadow: -24px 0 60px -30px rgba(0, 0, 0, 0.5);
+    transform: translateX(0);
+    visibility: visible;
+    transition: transform 260ms ease, visibility 0s linear 0s;
+}
+
+.edit-panel--closed {
+    transform: translateX(100%);
+    visibility: hidden;
+    transition: transform 260ms ease, visibility 0s linear 260ms;
+}
+
+.edit-panel__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--rl-line, rgba(24, 24, 27, 0.14));
+}
+
+.edit-panel__heading {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--rl-ink, #18181b);
+}
+
+.edit-panel__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    font: inherit;
+    font-size: 1.1rem;
+    line-height: 1;
+    color: var(--rl-ink-muted, #6b7280);
+    background: transparent;
+    border: 0;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.edit-panel__close:hover,
+.edit-panel__close:focus-visible {
+    color: var(--rl-ink, #18181b);
+    background: var(--rl-surface-raised, rgba(24, 24, 27, 0.05));
+}
+
+.edit-panel__body {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 18px 20px;
+}
+
+.edit-panel__field {
+    display: block;
+    margin-bottom: 16px;
+}
+
+.edit-panel__label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 0.78rem;
+    color: var(--rl-ink-muted, #6b7280);
+}
+
+.edit-panel__input,
+.edit-panel__textarea {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 8px 10px;
+    font: inherit;
+    font-size: 0.9rem;
+    color: var(--rl-ink, #18181b);
+    background: var(--rl-surface-raised, #f6f6f7);
+    border: 1px solid var(--rl-line, rgba(24, 24, 27, 0.14));
+    border-radius: 8px;
+    resize: vertical;
+}
+
+.edit-panel__input:focus,
+.edit-panel__textarea:focus {
+    outline: none;
+    border-color: var(--rl-accent, #3d8bff);
+}
+
+.edit-panel__error {
+    margin: 0;
+    font-size: 0.82rem;
+    color: var(--rl-danger, #d92d20);
+}
+
+.edit-panel__footer {
+    display: flex;
+    justify-content: flex-end;
+    padding: 14px 20px;
+    border-top: 1px solid var(--rl-line, rgba(24, 24, 27, 0.14));
+}
+
+.edit-panel__save {
+    padding: 8px 18px;
+    font: inherit;
+    font-size: 0.9rem;
+    color: var(--rl-save-ink, #ffffff);
+    background: var(--rl-save-bg, var(--rl-ink, #18181b));
+    border: 0;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.edit-panel__save:hover {
+    opacity: 0.88;
+}
+
+.edit-panel__save:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+/* The panel carries the theme of the application, so it reads the same in both. */
+.edit-panel[data-theme='White'],
+.edit-panel[data-theme='white'] {
+    --rl-surface: #ffffff;
+    --rl-surface-raised: #f6f6f7;
+    --rl-ink: #18181b;
+    --rl-ink-muted: #6b7280;
+    --rl-line: rgba(24, 24, 27, 0.14);
+    --rl-accent: #3d8bff;
+    --rl-danger: #d92d20;
+    --rl-save-bg: #18181b;
+    --rl-save-ink: #ffffff;
+}
+
+.edit-panel[data-theme='Dark'],
+.edit-panel[data-theme='dark'] {
+    --rl-surface: #101014;
+    --rl-surface-raised: #1c1c22;
+    --rl-ink: #f4f4f5;
+    --rl-ink-muted: #a1a1aa;
+    --rl-line: rgba(255, 255, 255, 0.16);
+    --rl-accent: #7aa7ff;
+    --rl-danger: #f97066;
+    --rl-save-bg: #f4f4f5;
+    --rl-save-ink: #101014;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .edit-panel {
+        transition: none;
+    }
+}
