@@ -931,18 +931,21 @@ export default function FileView({
                         </div>
                     ) : null}
 
-                    {status === 'ready' && cards.length ? (
-                        <ArcGallery
-                            cards={cardsWithBody}
-                            activeIndex={activeIndex}
-                            onActiveIndexChange={selectCard}
-                            flipRequest={flipRequest}
-                            zoom="focused"
-                            focusExtra={masteryButtons}
-                            theme={effectiveTheme}
-                        />
-                    ) : null}
                 </main>
+
+                {status === 'ready' && cards.length ? (
+                    <ArcGallery
+                        className="file-view__stage"
+                        cards={cardsWithBody}
+                        activeIndex={activeIndex}
+                        onActiveIndexChange={selectCard}
+                        flipRequest={flipRequest}
+                        arrangement="deck"
+                        zoom="focused"
+                        focusExtra={masteryButtons}
+                        theme={effectiveTheme}
+                    />
+                ) : null}
 
                 <aside className="file-view__right">
                     <FavoritesRail

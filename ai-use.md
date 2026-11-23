@@ -57,10 +57,26 @@ components were filled in.
 | Grok | `source/client/src/components/ArcGallery.css` | 2026-11-22. The card face uses border-box so the question is not clipped. Mastery buttons sit on the card, outside the flip control. |
 | Grok | `source/client/src/views/FileView.css` | 2026-11-22. Narrow layout: two-row top bar, shorter wheel, rail beside the card, room under the fixed dock, card aligned to the top of its cell. |
 | Grok | `source/client/src/views/FileView.jsx` | 2026-11-22. Stale level no longer rewrites the address. Zen opens on the current card. Wheel re-click flips. Window scroll hides the dock. A new card opens in the edit panel. |
-| Grok | `source/client/src/views/ZenView.jsx` | 2026-11-22. Reads the card id handed over in history state, without putting it in the address. |
+| Grok | `source/client/src/views/ZenView.jsx` | 2026-11-22. Reads the card id handed over in history state, without putting it in the address. Later the same day the zen card uses the file-view deck and the Mastered / Not mastered buttons. |
+| Grok | `source/client/src/views/ZenView.css` | Dark theme colours for the mastery buttons on the zen card. |
 | Grok | `source/client/src/components/CardWheel.jsx` | 2026-11-22. Clicking the already selected card calls `onActiveClick`. |
 | Grok | `source/client/src/views/fileActions.js` | 2026-11-22. Delete confirmation states both the folder count and the card count. |
 | Grok | `source/tests/cases.mjs` | 2026-11-22. U.2 expects both counts, including zero folders. |
+| Grok | `source/client/src/components/ArcGallery.jsx` | Later the same day. The file view lays cards in a wide horizontal row. A drag follows the pointer in any direction, and the mastery buttons move with the card. |
+| Grok | `source/client/src/components/ArcGallery.css` | Later the same day. Row sizing, and a flat mover so the buttons stay on the card while it is dragged. |
+| Grok | `source/client/src/views/FileView.css` | Later the same day. Removed the gray panel behind the cards. More space between the wheel and the gallery. |
+| Grok | `source/client/src/views/FileView.jsx` | Later the same day. The file view asks the gallery for the horizontal row. |
+| Grok | `source/client/src/components/CardWheel.jsx` | Later the same day. Shorter rows so more cards fit on the wheel. |
+| Grok | `source/client/src/components/CardWheel.css` | Later the same day. Smaller wheel cards, shifted left, away from the gallery. A polish pass then gave each row a 44px target and kept the dial next to the wheel. |
+| Grok | `source/client/src/views/FileView.css` | Polish pass. Dark-theme mastery colors, a taller mastery hit area, and a larger folder delete target. |
+| Grok | `source/client/src/components/ArcGallery.css` | Polish pass. Reduced motion also stops the drag layer, and mastery dots lighten in the dark theme. |
+| Grok | `source/client/src/components/ArcGallery.jsx` | The file view is one card with the others peeking only to the right. While dragging, that card is portaled to the top of the page, inside the app root so its colours survive. |
+| Grok | `source/client/src/components/ArcGallery.css` | The floating card keeps a perspective, so the flip faces stay visible instead of leaving only the shadow. |
+| Grok | `source/client/src/views/FileView.jsx` | The gallery is no longer inside the middle panel, so nothing clips the card. |
+| Grok | `source/client/src/views/FileView.css` | The middle panel has no boundary. The gallery floats over the page. |
+| Grok | `source/client/src/components/CardWheel.css` | The wheel cards sit on the left edge of their column. |
+| Grok | `source/client/src/components/MasteryDial.jsx` | The mastered and not-mastered counts sit under the ring, not under the wider label row. |
+| Grok | `source/client/src/components/MasteryDial.css` | The two counts are centered on the ring. The side labels stay level with the ring. |
 
 ## MiniMax Code, 20 November 2026
 

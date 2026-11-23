@@ -55,7 +55,11 @@ export default function MasteryDial({
     )
 
     return (
-        <div className={`mastery-dial${className ? ` ${className}` : ''}`} data-theme={theme}>
+        <div
+            className={`mastery-dial${className ? ` ${className}` : ''}`}
+            data-theme={theme}
+            style={{ '--dial-size': `${size}px` }}
+        >
             <div className="mastery-dial__row">
                 <span className="mastery-dial__label mastery-dial__label--master">Master</span>
                 <div className="mastery-dial__ring">
@@ -71,12 +75,12 @@ export default function MasteryDial({
                     ) : (
                         dial
                     )}
+                    <div className="mastery-dial__counts">
+                        <span className="mastery-dial__count mastery-dial__count--master">{m}</span>
+                        <span className="mastery-dial__count mastery-dial__count--not-mastered">{n}</span>
+                    </div>
                 </div>
                 <span className="mastery-dial__label mastery-dial__label--not-mastered">Not Mastered</span>
-            </div>
-            <div className="mastery-dial__counts">
-                <span className="mastery-dial__count mastery-dial__count--master">{m}</span>
-                <span className="mastery-dial__count mastery-dial__count--not-mastered">{n}</span>
             </div>
         </div>
     )

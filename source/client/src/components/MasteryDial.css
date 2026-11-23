@@ -11,24 +11,24 @@
     --mastery-not-mastered: #dc2626;
 
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
+    justify-content: center;
     color: var(--rl-ink);
     font-family: inherit;
 }
 
 .mastery-dial__row {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
-    flex-wrap: wrap;
     gap: 6px;
 }
 
 .mastery-dial__ring {
-    display: inline-flex;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     flex: 0 0 auto;
+    gap: 10px;
 }
 
 /* The button only wraps the ring. It stays in the flow of the mouse, so the
@@ -55,10 +55,10 @@
 }
 
 .mastery-dial__label {
-    /* The label takes the room it needs. The row may wrap, so a long label
-       never pushes the ring out of the column. */
-    flex: 0 1 auto;
-    min-width: 0;
+    /* Sit beside the ring, not beside the numbers under it. "Not Mastered"
+       is wider than "Master", so the numbers are centered on the ring alone. */
+    flex: 0 0 auto;
+    margin-top: calc((var(--dial-size, 132px) - 1em) / 2);
     text-align: center;
     white-space: nowrap;
     font-size: 11px;

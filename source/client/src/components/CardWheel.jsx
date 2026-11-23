@@ -14,8 +14,8 @@ import { HugeiconsIcon } from '@hugeicons/react'
 import { Note01Icon } from '@hugeicons/core-free-icons'
 import './CardWheel.css'
 
-// One card is 56px high and the gap between two cards is 16px.
-const ROW_H = 72
+// One card is 44px high and the gap between two cards is 8px.
+const ROW_H = 52
 const TILT = 6
 const CURVE = 1
 const BLUR = 2

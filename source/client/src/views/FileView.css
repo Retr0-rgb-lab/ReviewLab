@@ -183,11 +183,26 @@
 /* -------------------------------------------------------------- the columns */
 
 .file-view__columns {
+    position: relative;
     flex: 1;
     min-height: 0;
     display: grid;
     grid-template-columns: 288px minmax(0, 1fr) 64px;
-    gap: 16px;
+    gap: 28px;
+}
+
+/* The cards sit on the page, not inside a panel. Overflow stays visible so
+   the right-hand slivers are not cut off by a column edge. */
+.file-view__stage {
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    overflow: visible;
+    pointer-events: none;
+}
+
+.file-view__stage .arc-gallery__card {
+    pointer-events: auto;
 }
 
 .file-view__left {
@@ -262,8 +277,8 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 30px;
-    height: 30px;
+    width: 36px;
+    height: 36px;
     padding: 0;
     border: 0;
     border-radius: 8px;
@@ -283,17 +298,25 @@
     outline-offset: 1px;
 }
 
-/* The cards of the level in the middle. */
+/* The cards of the level in the middle. The page itself is the surface.
+   A second rounded panel behind the cards would nest one card in another. */
 .file-view__center {
     display: flex;
     flex-direction: column;
     min-width: 0;
     min-height: 0;
-    overflow-y: auto;
-    padding-bottom: 96px;
-    border: 1px solid var(--rl-line);
-    border-radius: 18px;
-    background: var(--rl-surface-raised);
+    overflow: visible;
+    padding-bottom: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    pointer-events: none;
+}
+
+.file-view__center .file-view__empty,
+.file-view__center .state,
+.file-view__center .state__message {
+    pointer-events: auto;
 }
 
 .file-view__center > .arc-gallery {
@@ -328,7 +351,8 @@
 }
 
 .file-view__mastery-button {
-    padding: 6px 14px;
+    min-height: 36px;
+    padding: 8px 14px;
     border: 1px solid var(--rl-line);
     border-radius: 999px;
     background: var(--rl-surface-raised);
@@ -358,6 +382,18 @@
     color: #dc2626;
     border-color: #dc2626;
     background: rgba(220, 38, 38, 0.12);
+}
+
+.file-view[data-theme='Dark'] .file-view__mastery-button--mastered[aria-pressed='true'] {
+    color: #4ade80;
+    border-color: #4ade80;
+    background: rgba(74, 222, 128, 0.16);
+}
+
+.file-view[data-theme='Dark'] .file-view__mastery-button--unmastered[aria-pressed='true'] {
+    color: #f87171;
+    border-color: #f87171;
+    background: rgba(248, 113, 113, 0.16);
 }
 
 /* ---------------------------------------------------------- the empty level */
@@ -516,17 +552,12 @@
         grid-row: 2;
         /* Tall enough for one card, and no taller, so the card is not
            centered down into the fixed dock. */
-        height: 460px;
+        height: 400px;
     }
 
     .file-view__center > .arc-gallery {
         height: 100%;
         min-height: 0;
-    }
-
-    .file-view__center .arc-gallery__card {
-        top: 8px;
-        margin-top: 0;
     }
 
     .file-view__right {
@@ -576,14 +607,16 @@
 
     /* Shorter than the wheel's own 360px, so the dial sits above the dock. */
     .file-view .card-wheel {
-        height: 220px;
+        flex: none;
+        height: 200px;
+        max-height: 200px;
     }
 
-    /* The gallery card is 260px. Beside a 64px rail it has to follow the cell
-       so the card stays inside it and the page does not scroll sideways. */
-    .file-view__center .arc-gallery__card {
-        width: min(260px, 100%);
-        margin-left: calc(min(260px, 100%) / -2);
+    /* Keep the one card in the lower band, above the dock, not over the wheel. */
+    .file-view__stage {
+        top: auto;
+        height: 250px;
+        bottom: 88px;
     }
 }
 

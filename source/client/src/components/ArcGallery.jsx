@@ -14,6 +14,7 @@
 // zoom all live here, so the two views share the same feel.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { StarIcon } from '@hugeicons/core-free-icons'
 import FlipCard from './react-bits/FlipCard.jsx'
@@ -26,15 +27,20 @@ const ARC_DEPTH = 0.85
 // The deck behind the focused card.
 const DECK_OFFSET = 16
 const DECK_DEPTH = 8
-// The drag that changes the card. A small move is still a click. A finished
-// horizontal move, or a clear flick, goes to the next card. Anything shorter
-// returns the card to its place.
+// The drag that changes the card. A small move is still a click. The card
+// follows the pointer in any direction. A finished move changes the card in
+// the direction of that move. Anything shorter returns the card to its place.
 const DRAG_THRESHOLD = 12
-const DRAG_COMMIT = 48
+const DRAG_COMMIT = 56
 const DRAG_HISTORY_MS = 90
 // Pixels per millisecond over the recent samples. Slower than this is a drag
 // that has to cover DRAG_COMMIT before it changes the card.
 const DRAG_FLICK = 0.8
+// The file view shows one card. The cards behind it peek a little to the right.
+const ROW_WIDE = { w: 520, h: 360 }
+const ROW_MID = { w: 440, h: 300 }
+const ROW_NARROW = { w: 280, h: 210 }
+const DECK_PEEK = 16
 
 const clamp = (value, low, high) => Math.min(high, Math.max(low, value))
 const lerp = (from, to, amount) => from + (to - from) * amount
@@ -126,18 +132,50 @@ function keepsOwnKeys(target) {
     return Boolean(target.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"])'))
 }
 
-// Horizontal speed over the samples still inside the recent window.
-function recentSpeed(hist, now) {
+// Speed over the samples still inside the recent window, in both axes.
+function recentVelocity(hist, now) {
     if (!hist || hist.length < 2) {
-        return 0
+        return { x: 0, y: 0 }
     }
     const last = hist[hist.length - 1]
     const first = hist[0]
     const dt = last.t - first.t
     if (dt <= 0 || now - last.t > DRAG_HISTORY_MS) {
-        return 0
+        return { x: 0, y: 0 }
     }
-    return (last.x - first.x) / dt
+    return {
+        x: (last.x - first.x) / dt,
+        y: (last.y - first.y) / dt,
+    }
+}
+
+// One card in front. Every other card steps only to the right, a sliver each.
+function deckPlace(index, activeIndex, length) {
+    let steps = index - activeIndex
+    if (length > 0 && steps < 0) {
+        steps += length
+    }
+    const depth = steps === 0 ? 0 : Math.min(steps, 3)
+    return {
+        x: depth * DECK_PEEK,
+        y: depth * 3,
+        z: -depth * 16,
+        rotateY: 0,
+        scale: 1,
+        opacity: steps > 3 ? 0 : 1,
+        blur: 0,
+        distance: depth,
+    }
+}
+
+function rowSizeFor(viewport) {
+    if (viewport < 720) {
+        return ROW_NARROW
+    }
+    if (viewport < 1100) {
+        return ROW_MID
+    }
+    return ROW_WIDE
 }
 
 export default function ArcGallery({
@@ -149,6 +187,7 @@ export default function ArcGallery({
     onFlip = null,
     focusExtra = null,
     flipRequest = undefined,
+    arrangement = 'arc',
     theme = 'White',
     className = '',
 }) {
@@ -156,12 +195,22 @@ export default function ArcGallery({
     const [t, setT] = useState(() => zoomValue(zoom))
     const [flippedIds, setFlippedIds] = useState({})
     // Extra horizontal shift while a drag is active. It is not part of cardLayout.
-    const [dragX, setDragX] = useState(0)
+    const [drag, setDrag] = useState({ x: 0, y: 0, origin: null })
+    const [viewport, setViewport] = useState(() => (typeof window === 'undefined' ? 1440 : window.innerWidth))
     const tRef = useRef(t)
     const dragRef = useRef(null)
     const pinchRef = useRef(null)
     const touchRef = useRef(null)
     const flipRequestRef = useRef(flipRequest)
+    const row = arrangement === 'row' || arrangement === 'deck'
+    const activeCardRef = useRef(null)
+    const cardSize = row ? rowSizeFor(viewport) : { w: 320, h: 440 }
+
+    useEffect(() => {
+        const onResize = () => setViewport(window.innerWidth)
+        window.addEventListener('resize', onResize)
+        return () => window.removeEventListener('resize', onResize)
+    }, [])
 
     // The zoom name comes from the outside. The value inside moves towards it.
     useEffect(() => {
@@ -375,49 +424,61 @@ export default function ArcGallery({
 
     // The drag that changes the card. The window listens, so the card does
     // not have to give up the pointer to the gallery. The card follows the
-    // pointer with an extra shift, and only a finished horizontal gesture
-    // moves on. That move is always the next card, the same as ArrowRight.
+    // pointer in any direction. A finished move goes to the next or previous
+    // card along the stronger axis. A short move returns the card.
     useEffect(() => {
         const onMove = (event) => {
-            const drag = dragRef.current
-            if (!drag || drag.pointerId !== event.pointerId) {
+            const gesture = dragRef.current
+            if (!gesture || gesture.pointerId !== event.pointerId) {
                 return
             }
-            const dx = event.clientX - drag.startX
-            const dy = event.clientY - drag.startY
-            if (!drag.moved && Math.hypot(dx, dy) < DRAG_THRESHOLD) {
+            const dx = event.clientX - gesture.startX
+            const dy = event.clientY - gesture.startY
+            if (!gesture.moved && Math.hypot(dx, dy) < DRAG_THRESHOLD) {
                 return
             }
-            drag.moved = true
+            gesture.moved = true
+            if (!gesture.origin && activeCardRef.current) {
+                const rect = activeCardRef.current.getBoundingClientRect()
+                gesture.origin = {
+                    left: rect.left,
+                    top: rect.top,
+                    width: rect.width,
+                    height: rect.height,
+                }
+            }
             const now = performance.now()
-            drag.hist.push({ t: now, x: event.clientX })
-            while (drag.hist.length > 2 && now - drag.hist[0].t > DRAG_HISTORY_MS) {
-                drag.hist.shift()
+            gesture.hist.push({ t: now, x: event.clientX, y: event.clientY })
+            while (gesture.hist.length > 2 && now - gesture.hist[0].t > DRAG_HISTORY_MS) {
+                gesture.hist.shift()
             }
-            setDragX(dx)
+            setDrag({ x: dx, y: dy, origin: gesture.origin || null })
         }
         const finish = (event, cancelled) => {
-            const drag = dragRef.current
-            if (!drag || drag.pointerId !== event.pointerId) {
+            const gesture = dragRef.current
+            if (!gesture || gesture.pointerId !== event.pointerId) {
                 return
             }
             dragRef.current = null
-            setDragX(0)
+            setDrag({ x: 0, y: 0, origin: null })
             if (cancelled) {
                 return
             }
-            if (!drag.moved) {
+            if (!gesture.moved) {
                 // A click without a drag flips the card that is in front.
                 flipCard(cards[activeIndex]?.id)
                 return
             }
-            const dx = event.clientX - drag.startX
-            const dy = event.clientY - drag.startY
-            const travelX = Math.abs(dx)
-            const speed = recentSpeed(drag.hist, performance.now())
-            const flicked = travelX >= DRAG_THRESHOLD && travelX >= Math.abs(dy) && Math.abs(speed) >= DRAG_FLICK
-            if (travelX >= DRAG_COMMIT || flicked) {
-                stepCard(1)
+            const dx = event.clientX - gesture.startX
+            const dy = event.clientY - gesture.startY
+            const travel = Math.hypot(dx, dy)
+            const velocity = recentVelocity(gesture.hist, performance.now())
+            const speed = Math.hypot(velocity.x, velocity.y)
+            const flicked = travel >= DRAG_THRESHOLD && speed >= DRAG_FLICK
+            if (travel >= DRAG_COMMIT || flicked) {
+                const horizontal = Math.abs(dx) >= Math.abs(dy)
+                const forward = horizontal ? dx < 0 : dy < 0
+                stepCard(forward ? 1 : -1)
             }
         }
         const onUp = (event) => finish(event, false)
@@ -452,8 +513,12 @@ export default function ArcGallery({
         if (!count) {
             return []
         }
-        return cards.map((card, index) => cardLayout(index, activeIndex, count, t))
-    }, [cards, activeIndex, count, t])
+        return cards.map((card, index) => (
+            row
+                ? deckPlace(index, activeIndex, count)
+                : cardLayout(index, activeIndex, count, t)
+        ))
+    }, [cards, activeIndex, count, t, row, cardSize.w])
 
     if (!count) {
         return (
@@ -465,24 +530,37 @@ export default function ArcGallery({
 
     return (
         <div
-            className={`arc-gallery ${className}`}
+            className={`arc-gallery${row ? ' arc-gallery--row' : ''} ${className}`}
             data-theme={theme}
             onPointerDown={onPointerDown}
+            style={row ? { '--row-w': `${cardSize.w}px`, '--row-h': `${cardSize.h}px` } : undefined}
         >
             <div className="arc-gallery__stage">
                 {cards.map((card, index) => {
                     const place = layouts[index]
                     const isActive = index === activeIndex
                     const flipped = Boolean(flippedIds[card.id])
-                    // The drag is a second translate in front of the layout, so
-                    // cardLayout itself stays the position of the card at rest.
-                    const dragShift = isActive && dragX !== 0 ? `translate3d(${dragX.toFixed(2)}px, 0, 0) ` : ''
+                    // The rest position stays in the layout. The drag is a flat
+                    // translate on the mover, so the mastery buttons travel
+                    // with the card instead of staying on the stage.
                     const style = {
-                        transform: `${dragShift}translate3d(${place.x.toFixed(2)}px, ${place.y.toFixed(2)}px, ${place.z.toFixed(2)}px) rotateY(${place.rotateY.toFixed(3)}deg) scale(${place.scale.toFixed(4)})`,
+                        transform: `translate3d(${place.x.toFixed(2)}px, ${place.y.toFixed(2)}px, ${place.z.toFixed(2)}px) rotateY(${place.rotateY.toFixed(3)}deg) scale(${place.scale.toFixed(4)})`,
                         opacity: place.opacity.toFixed(3),
-                        zIndex: isActive ? 40 : Math.max(1, 40 - place.distance),
+                        zIndex: isActive ? 40 : Math.max(1, 40 - Math.abs(place.distance)),
                         filter: place.blur > 0.05 ? `blur(${place.blur.toFixed(2)}px)` : undefined,
                     }
+                    const floating = isActive && drag.origin
+                    const floatStyle = floating
+                        ? {
+                            position: 'fixed',
+                            zIndex: 100,
+                            left: drag.origin.left + drag.x,
+                            top: drag.origin.top + drag.y,
+                            width: drag.origin.width,
+                            height: drag.origin.height,
+                            margin: 0,
+                        }
+                        : undefined
                     const faceClass = focusExtra && isActive ? 'arc-gallery__face arc-gallery__face--with-extra' : 'arc-gallery__face'
                     const front = (
                         <div className={faceClass}>
@@ -502,35 +580,50 @@ export default function ArcGallery({
                             </p>
                         </div>
                     )
+                    const faceNode = (
+                        <FlipCard
+                            front={front}
+                            back={back}
+                            flipped={flipped}
+                            onFlipChange={() => {}}
+                            flipOnClick={false}
+                            draggable={false}
+                            tilt={false}
+                            glare
+                            width={floating ? drag.origin.width : cardSize.w}
+                            height={floating ? drag.origin.height : cardSize.h}
+                            radius={16}
+                            background="var(--rl-surface)"
+                            color="var(--rl-ink)"
+                            shadow
+                            shadowOpacity={isActive ? 0.28 : 0.12}
+                            ariaLabel={card.title}
+                            className="arc-gallery__flip"
+                        />
+                    )
+                    const extraNode = focusExtra && isActive
+                        ? <div className="arc-gallery__extra">{focusExtra}</div>
+                        : null
                     return (
                         <div
                             className="arc-gallery__card"
                             key={card.id}
-                            style={style}
+                            ref={isActive ? activeCardRef : null}
+                            style={{ ...style, visibility: floating ? 'hidden' : undefined }}
                             aria-hidden={!isActive}
                         >
-                            <FlipCard
-                                front={front}
-                                back={back}
-                                flipped={flipped}
-                                onFlipChange={() => {}}
-                                flipOnClick={false}
-                                draggable={false}
-                                tilt={false}
-                                glare={false}
-                                width={320}
-                                height={440}
-                                radius={22}
-                                background="var(--rl-surface)"
-                                color="var(--rl-ink)"
-                                shadow
-                                shadowOpacity={0.16}
-                                ariaLabel={card.title}
-                                className="arc-gallery__flip"
-                            />
-                            {focusExtra && isActive ? (
-                                <div className="arc-gallery__extra">{focusExtra}</div>
-                            ) : null}
+                            {floating ? createPortal(
+                                <div className="arc-gallery__float" style={floatStyle}>
+                                    {faceNode}
+                                    {extraNode}
+                                </div>,
+                                document.querySelector('.app-root') || document.body,
+                            ) : (
+                                <div className="arc-gallery__mover">
+                                    {faceNode}
+                                    {extraNode}
+                                </div>
+                            )}
                         </div>
                     )
                 })}

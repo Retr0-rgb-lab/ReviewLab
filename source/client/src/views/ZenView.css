@@ -38,6 +38,18 @@
     --rl-accent: #7aa7ff;
 }
 
+.zen-view[data-theme='Dark'] .file-view__mastery-button--mastered[aria-pressed='true'] {
+    color: #4ade80;
+    border-color: #4ade80;
+    background: rgba(74, 222, 128, 0.16);
+}
+
+.zen-view[data-theme='Dark'] .file-view__mastery-button--unmastered[aria-pressed='true'] {
+    color: #f87171;
+    border-color: #f87171;
+    background: rgba(248, 113, 113, 0.16);
+}
+
 /* The gallery fills the screen. */
 .zen-view__stage {
     position: absolute;

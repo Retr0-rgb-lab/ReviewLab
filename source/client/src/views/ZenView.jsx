@@ -6,18 +6,17 @@
 // leave the zen mode.
 //
 // The keyboard of the gallery is also the keyboard of this view: the arrow keys
-// change the card, the enter key zooms in and the pinch zooms out. The only key
-// this view listens to itself is Escape, which leaves the zen mode.
+// change the card and Enter flips it. Escape leaves the zen mode.
 //
-// The zen mode writes nothing. It shows the cards of a level and lets the
-// student look at them, so there is no mastery button, no favorite button and
-// no editor here, and onDataChanged is never called.
+// The card is the same deck as the file view, including Mastered and Not
+// mastered. Escape leaves. There is no favorite button and no editor here.
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Cancel01Icon, Search01Icon } from '@hugeicons/core-free-icons'
 import ArcGallery from '../components/ArcGallery.jsx'
+import { setMastery } from './fileActions.js'
 import { fetchLevel, fetchTree } from './levelActions.js'
 import './ZenView.css'
 
@@ -145,7 +144,6 @@ export default function ZenView({
     const [status, setStatus] = useState('loading')
     const [cards, setCards] = useState([])
     const [activeIndex, setActiveIndex] = useState(0)
-    const [zoom, setZoom] = useState('focused')
     const [localTheme, setLocalTheme] = useState(theme)
     const [message, setMessage] = useState('')
 
@@ -259,6 +257,44 @@ export default function ZenView({
         navigate(`/folder/${folderId}`)
     }, [cards, folderId, navigate, safeIndex])
 
+    const active = cards[safeIndex] || null
+
+    async function applyMastery(cardId, mastery) {
+        const card = cards.find((entry) => entry.id === cardId)
+        if (!card || card.mastery === mastery) {
+            return
+        }
+        const result = await setMastery(cardId, mastery)
+        if (result && result.error) {
+            return
+        }
+        setCards((previous) => previous.map((entry) => (
+            entry.id === cardId ? { ...entry, mastery } : entry
+        )))
+        onDataChanged?.()
+    }
+
+    const masteryButtons = active ? (
+        <div className="file-view__mastery">
+            <button
+                type="button"
+                className="file-view__mastery-button file-view__mastery-button--mastered"
+                aria-pressed={active.mastery === 'mastered'}
+                onClick={() => applyMastery(active.id, 'mastered')}
+            >
+                Mastered
+            </button>
+            <button
+                type="button"
+                className="file-view__mastery-button file-view__mastery-button--unmastered"
+                aria-pressed={active.mastery === 'unmastered'}
+                onClick={() => applyMastery(active.id, 'unmastered')}
+            >
+                Not mastered
+            </button>
+        </div>
+    ) : null
+
     function toggleTheme() {
         if (hasThemeToggle) {
             onToggleTheme()
@@ -330,8 +366,9 @@ export default function ZenView({
                         cards={cards}
                         activeIndex={safeIndex}
                         onActiveIndexChange={onActiveIndexChange}
-                        zoom={zoom}
-                        onZoomChange={setZoom}
+                        arrangement="deck"
+                        zoom="focused"
+                        focusExtra={masteryButtons}
                         onFlip={() => {}}
                         theme={currentTheme}
                     />

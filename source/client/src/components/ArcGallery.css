@@ -5,8 +5,8 @@
     width: 100%;
     height: 100%;
     min-height: 320px;
-    overflow: hidden;
-    touch-action: pan-y;
+    overflow: visible;
+    touch-action: none;
     user-select: none;
     -webkit-user-select: none;
 }
@@ -31,6 +31,42 @@
     transform-style: preserve-3d;
     will-change: transform, opacity, filter;
     transition: opacity 180ms ease;
+}
+
+/* The file view uses a wide horizontal row. The size comes from the gallery. */
+.arc-gallery--row .arc-gallery__card {
+    width: var(--row-w);
+    height: var(--row-h);
+    margin-left: calc(var(--row-w) / -2);
+    margin-top: calc(var(--row-h) / -2);
+}
+
+/* Flat layer that carries the card and the mastery buttons together. */
+.arc-gallery__mover {
+    position: absolute;
+    inset: 0;
+    transition: transform 220ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.arc-gallery__mover--live {
+    transition: none;
+}
+
+/* The dragged card leaves every panel and covers the page.
+   Perspective has to travel with it. Without that, the flip faces are
+   hidden by backface-visibility and only the blurred shadow remains.
+   The portal stays inside .app-root so the surface colour still applies. */
+.arc-gallery__float {
+    --arc-face-pad: 28px;
+    pointer-events: auto;
+    z-index: 100;
+    perspective: 1400px;
+}
+
+.arc-gallery__float .arc-gallery__flip,
+.arc-gallery__float .flip-card {
+    width: 100%;
+    height: 100%;
 }
 
 /* The card itself does not react to the pointer, the gallery handles it. */
@@ -156,12 +192,20 @@
 
 /* Narrow screens: the card takes the room it can get. */
 @media (max-width: 720px) {
-    .arc-gallery__card {
+    .arc-gallery:not(.arc-gallery--row) .arc-gallery__card {
         --arc-face-pad: 20px;
         width: 260px;
         height: 360px;
         margin-left: -130px;
         margin-top: -180px;
+    }
+
+    .arc-gallery--row .arc-gallery__card {
+        --arc-face-pad: 20px;
+        width: var(--row-w);
+        height: var(--row-h);
+        margin-left: calc(var(--row-w) / -2);
+        margin-top: calc(var(--row-h) / -2);
     }
 
     .arc-gallery__face {
@@ -174,7 +218,16 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .arc-gallery__card {
+    .arc-gallery__card,
+    .arc-gallery__mover {
         transition: none;
     }
+}
+
+.arc-gallery[data-theme='Dark'] .arc-gallery__status[data-mastery='mastered'] {
+    background: #4ade80;
+}
+
+.arc-gallery[data-theme='Dark'] .arc-gallery__status[data-mastery='unmastered'] {
+    background: #f87171;
 }
