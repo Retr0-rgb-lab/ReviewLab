@@ -33,6 +33,7 @@ import {
 
 import { readApiError } from '../client/src/api.js'
 import { itemKind, newCardFocus, validateBody, validateTitle } from '../client/src/views/ZenView.jsx'
+import { renderCardBody } from '../client/src/views/cardBody.jsx'
 import { completionRate, markedCount, rateSummary, unmasteredCards } from '../client/src/views/StatsView.jsx'
 import { cardMenuActions } from '../client/src/components/CardMenu.jsx'
 import { rowName, rowPath } from '../client/src/components/SearchPalette.jsx'
@@ -446,4 +447,40 @@ check('G.7', 'the distance to a card is the same in both zoom states', () => {
     assert.equal(only.distance, 0)
     assert.equal(only.scale, 1)
     assert.equal(only.opacity, 1)
+})
+
+// ------------------------------------------------------------- the card body
+
+check('E.1', 'the card body shows bold, italic and a bullet, and a stray star stays text', () => {
+    const textOf = (node) => {
+        if (node == null || typeof node === 'boolean') return ''
+        if (typeof node === 'string' || typeof node === 'number') return String(node)
+        if (Array.isArray(node)) return node.map(textOf).join('')
+        return textOf(node.props?.children)
+    }
+    const find = (node, type, found = []) => {
+        if (node == null || typeof node === 'boolean') return found
+        if (typeof node === 'string' || typeof node === 'number') return found
+        if (Array.isArray(node)) {
+            for (const child of node) find(child, type, found)
+            return found
+        }
+        if (node.type === type) found.push(node)
+        find(node.props?.children, type, found)
+        return found
+    }
+
+    assert.equal(renderCardBody(''), null)
+
+    const nodes = renderCardBody('**a** and *b*\n- c')
+    assert.equal(textOf(find(nodes, 'strong')[0]), 'a')
+    assert.equal(textOf(find(nodes, 'em')[0]), 'b')
+    assert.equal(textOf(find(nodes, 'li')[0]), 'c')
+    assert.equal(find(nodes, 'ul').length, 1)
+    assert.equal(textOf(nodes).includes('*'), false)
+
+    const stray = renderCardBody('a * star')
+    assert.equal(find(stray, 'em').length, 0)
+    assert.equal(find(stray, 'strong').length, 0)
+    assert.equal(textOf(stray), 'a * star')
 })

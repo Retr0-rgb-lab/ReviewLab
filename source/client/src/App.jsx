@@ -235,7 +235,6 @@ function ZenRoute(props) {
 
 function StatsRoute(props) {
     const { folderId } = useParams()
-    const navigate = useNavigate()
     const [state, setState] = useState({ status: 'loading', message: '' })
     const loadedKey = useRef(null)
 
@@ -293,12 +292,10 @@ function StatsRoute(props) {
         <StatsView
             folder={state.level.folder}
             cards={state.level.cards || []}
-            folderId={folderId}
             theme={props.theme}
             dataVersion={props.dataVersion}
             onOpenSearch={props.onOpenSearch}
             onToggleTheme={props.onToggleTheme}
-            onOpenCard={(cardId) => navigate(`/zen/${folderId}/${cardId}`)}
         />
     )
 }

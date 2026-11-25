@@ -5,10 +5,10 @@
 // mastered. The completion rate below it uses the other denominator: the cards
 // of the whole level.
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { HugeiconsIcon } from '@hugeicons/react'
-import { Note01Icon, Search01Icon } from '@hugeicons/core-free-icons'
+import { Search01Icon } from '@hugeicons/core-free-icons'
 import MasteryDial from '../components/MasteryDial.jsx'
 import { fetchTree } from './levelActions.js'
 import './StatsView.css'
@@ -37,21 +37,39 @@ export function rateSummary(cards) {
     return `${completionRate(cards)}% (${markedCount(cards)} of ${cards.length} cards marked)`
 }
 
+function byCreated(a, b) {
+    const created = new Date(a?.created_at ?? 0).getTime() - new Date(b?.created_at ?? 0).getTime()
+    if (created !== 0) {
+        return created
+    }
+    return (a?.ord ?? 0) - (b?.ord ?? 0)
+}
+
+// The cards of this level that are mastered, oldest first.
+export function masteredCards(cards) {
+    if (!Array.isArray(cards)) {
+        return []
+    }
+    return cards.filter((card) => card?.mastery === 'mastered').slice().sort(byCreated)
+}
+
 // The cards of this level that are not mastered, oldest first.
 export function unmasteredCards(cards) {
     if (!Array.isArray(cards)) {
         return []
     }
-    return cards
-        .filter((card) => card?.mastery === 'unmastered')
-        .slice()
-        .sort((a, b) => {
-            const created = new Date(a?.created_at ?? 0).getTime() - new Date(b?.created_at ?? 0).getTime()
-            if (created !== 0) {
-                return created
-            }
-            return (a?.ord ?? 0) - (b?.ord ?? 0)
-        })
+    return cards.filter((card) => card?.mastery === 'unmastered').slice().sort(byCreated)
+}
+
+// One line for the list. Marks are removed so the row can ellipsize.
+export function answerPreview(body) {
+    const text = String(body ?? '')
+        .replace(/\*\*/g, '')
+        .replace(/\*/g, '')
+        .replace(/^- /gm, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+    return text || 'No answer yet.'
 }
 
 // The chain of folders from the outermost one down to the parent of the level.
@@ -73,6 +91,20 @@ function ancestorChain(folders, folder) {
     return chain
 }
 
+function useMaxWidth(px) {
+    const [matches, setMatches] = useState(() => (
+        typeof window !== 'undefined' && window.matchMedia(`(max-width: ${px}px)`).matches
+    ))
+    useEffect(() => {
+        const media = window.matchMedia(`(max-width: ${px}px)`)
+        const onChange = () => setMatches(media.matches)
+        onChange()
+        media.addEventListener('change', onChange)
+        return () => media.removeEventListener('change', onChange)
+    }, [px])
+    return matches
+}
+
 export default function StatsView({
     folder = null,
     cards = [],
@@ -80,23 +112,35 @@ export default function StatsView({
     theme = 'White',
     dataVersion = 0,
     onOpenSearch = null,
-    onOpenCard = null,
     onToggleTheme = null,
 }) {
     const navigate = useNavigate()
     const [tree, setTree] = useState({ folders: [], cards: [] })
+    const [treeStatus, setTreeStatus] = useState('loading')
     const [localTheme, setLocalTheme] = useState(theme)
+    const narrow = useMaxWidth(720)
+    const seenRowIds = useRef(new Set())
 
     useEffect(() => {
         let cancelled = false
+        setTreeStatus('loading')
         fetchTree()
             .then((result) => {
-                if (cancelled || !result || result.error) {
+                if (cancelled) {
+                    return
+                }
+                if (!result || result.error) {
+                    setTreeStatus('error')
                     return
                 }
                 setTree({ folders: result.folders || [], cards: result.cards || [] })
+                setTreeStatus('ready')
             })
-            .catch(() => {})
+            .catch(() => {
+                if (!cancelled) {
+                    setTreeStatus('error')
+                }
+            })
         return () => {
             cancelled = true
         }
@@ -106,13 +150,27 @@ export default function StatsView({
         setLocalTheme(theme)
     }, [theme])
 
-    const levelCards = Array.isArray(cards) ? cards : []
+    const bodyById = useMemo(() => {
+        const map = new Map()
+        for (const card of tree.cards || []) {
+            if (card && typeof card.body === 'string') {
+                map.set(card.id, card.body)
+            }
+        }
+        return map
+    }, [tree.cards])
+
+    const levelCards = (Array.isArray(cards) ? cards : []).map((card) => {
+        const body = bodyById.has(card.id) ? bodyById.get(card.id) : (card.body || '')
+        return { ...card, body }
+    })
     const total = levelCards.length
     const marked = markedCount(levelCards)
     const rate = completionRate(levelCards)
     const pending = useMemo(() => unmasteredCards(levelCards), [levelCards])
-    const mastered = levelCards.filter((card) => card?.mastery === 'mastered').length
-    const notMastered = levelCards.filter((card) => card?.mastery === 'unmastered').length
+    const masteredList = useMemo(() => masteredCards(levelCards), [levelCards])
+    const mastered = masteredList.length
+    const notMastered = pending.length
 
     const chain = ancestors || ancestorChain(tree.folders, folder)
     const folderCount = useMemo(() => {
@@ -131,14 +189,26 @@ export default function StatsView({
         setLocalTheme((current) => (current === 'Dark' ? 'White' : 'Dark'))
     }
 
+    const listSignature = [...masteredList, ...pending].map((card) => card.id).join('|')
+    const listRef = useRef([])
+    listRef.current = [...masteredList, ...pending]
+    // A row springs in the first time its id is on screen. After that, moving
+    // it between the two lists must not play the entrance again.
+    useEffect(() => {
+        const ids = listRef.current.map((card) => card.id).filter(Boolean)
+        const timer = window.setTimeout(() => {
+            for (const id of ids) {
+                seenRowIds.current.add(id)
+            }
+        }, 720)
+        return () => window.clearTimeout(timer)
+    }, [listSignature])
+
     function openCard(card) {
-        if (typeof onOpenCard === 'function') {
-            onOpenCard(card.id)
+        if (!card?.id || !folder?.id) {
             return
         }
-        if (folder?.id && card?.id) {
-            navigate(`/zen/${folder.id}/${card.id}`)
-        }
+        navigate(`/folder/${folder.id}/${card.id}`)
     }
 
     return (
@@ -171,11 +241,21 @@ export default function StatsView({
                                 <span className="stats-view__crumb-sep">›</span>
                             </span>
                         ))}
-                        <span className="stats-view__crumb stats-view__crumb--current">
+                        <button
+                            type="button"
+                            className="stats-view__crumb-link stats-view__crumb--current"
+                            onClick={() => {
+                                if (folder?.id) {
+                                    navigate(`/folder/${folder.id}`)
+                                }
+                            }}
+                        >
                             {folder?.name ?? ''}
-                        </span>
+                        </button>
                         <span className="stats-view__counts">
-                            {`${folderCount} folder${folderCount === 1 ? '' : 's'} · ${total} card${total === 1 ? '' : 's'}`}
+                            {treeStatus === 'ready'
+                                ? `${folderCount} folder${folderCount === 1 ? '' : 's'} · ${total} card${total === 1 ? '' : 's'}`
+                                : `${total} card${total === 1 ? '' : 's'}`}
                         </span>
                     </p>
                 </div>
@@ -194,45 +274,115 @@ export default function StatsView({
             {total === 0 ? (
                 <p className="stats-view__empty">This level has no cards.</p>
             ) : (
-                <>
-                    <div className="stats-view__ring">
+                <div className={`stats-view__board${masteredList.length > 0 && pending.length > 0 ? ' stats-view__board--both' : ''}`}>
+                    <div className="stats-view__dial">
                         <MasteryDial
                             mastered={mastered}
                             unmastered={notMastered}
-                            size={260}
+                            size={narrow ? 148 : 220}
                             theme={localTheme}
                         />
+                        <p className="stats-view__rate">
+                            <span className="stats-view__rate-value">
+                                {rate == null ? 'No cards' : `Completion ${rate}%`}
+                            </span>
+                            <span className="stats-view__rate-detail">
+                                {rate == null ? '' : `${marked} of ${total} marked`}
+                            </span>
+                        </p>
                     </div>
-
-                    <p className="stats-view__rate">
-                        <span className="stats-view__rate-value">{rate}%</span>
-                        <span className="stats-view__rate-detail">
-                            ({marked} of {total} cards marked)
-                        </span>
-                    </p>
-
-                    <h2 className="stats-view__subtitle">Not mastered</h2>
-
-                    {pending.length === 0 ? (
-                        <p className="stats-view__empty">No card of this level is marked as not mastered.</p>
-                    ) : (
-                        <ul className="stats-view__list">
-                            {pending.map((card) => (
-                                <li key={card.id}>
-                                    <button
-                                        type="button"
-                                        className="stats-view__card"
-                                        onClick={() => openCard(card)}
-                                    >
-                                        <HugeiconsIcon icon={Note01Icon} size={18} color="currentColor" aria-hidden="true" />
-                                        <span className="stats-view__card-title">{card.title ?? ''}</span>
-                                    </button>
-                                </li>
-                            ))}
-                        </ul>
-                    )}
-                </>
+                    {masteredList.length > 0 ? (
+                        <CardColumn
+                            title="Mastered"
+                            cards={masteredList}
+                            onOpen={openCard}
+                            treeStatus={treeStatus}
+                            seenRowIds={seenRowIds}
+                        />
+                    ) : null}
+                    {pending.length > 0 ? (
+                        <CardColumn
+                            title="Not mastered"
+                            cards={pending}
+                            onOpen={openCard}
+                            treeStatus={treeStatus}
+                            seenRowIds={seenRowIds}
+                        />
+                    ) : null}
+                </div>
             )}
+        </section>
+    )
+}
+
+function answerLine(body, treeStatus) {
+    if (treeStatus === 'loading') {
+        return '\u00a0'
+    }
+    if (treeStatus === 'error') {
+        return 'Answer unavailable.'
+    }
+    return answerPreview(body)
+}
+
+function CardColumn({ title, cards, onOpen, treeStatus, seenRowIds }) {
+    const rowRefs = useRef([])
+    const [hover, setHover] = useState(-1)
+    const active = hover
+    const [ring, setRing] = useState({ y: 0, h: 0, show: false })
+
+    useLayoutEffect(() => {
+        const row = rowRefs.current[active]
+        if (!row) {
+            setRing((current) => (current.show ? { ...current, show: false } : current))
+            return undefined
+        }
+        const update = () => {
+            setRing({ y: row.offsetTop, h: row.offsetHeight, show: true })
+        }
+        update()
+        const observer = new ResizeObserver(update)
+        observer.observe(row)
+        return () => observer.disconnect()
+    }, [active, cards])
+
+    return (
+        <section className="stats-view__column" aria-label={title}>
+            <h2 className="stats-view__column-title">{title}</h2>
+            <ul className="stats-view__list" onPointerLeave={() => setHover(-1)}>
+                    {cards.map((card, index) => {
+                        const pops = !seenRowIds.current.has(card.id)
+                        return (
+                        <li
+                            key={card.id}
+                            className={`stats-view__row${pops ? ' stats-view__row--enter' : ''}`}
+                            style={pops ? { '--row-i': Math.min(index, 8) } : undefined}
+                            ref={(element) => {
+                                rowRefs.current[index] = element
+                            }}
+                            onPointerEnter={() => setHover(index)}
+                        >
+                            <button
+                                type="button"
+                                className="stats-view__unit"
+                                onClick={() => onOpen(card)}
+                            >
+                                <span className="stats-view__question">{card.title || 'Untitled'}</span>
+                                <span className="stats-view__answer">{answerLine(card.body, treeStatus)}</span>
+                            </button>
+                        </li>
+                        )
+                    })}
+                    <span
+                        className="stats-view__ring"
+                        style={{
+                            transform: `translate3d(0, ${ring.y}px, 0)`,
+                            height: ring.h,
+                            opacity: ring.show ? 1 : 0,
+                        }}
+                        aria-hidden="true"
+                    />
+                </ul>
         </section>
     )
 }

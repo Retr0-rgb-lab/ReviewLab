@@ -5,7 +5,7 @@
 // gives the order of the items and the state of the cards, the tree gives the
 // body of the cards and the path of the level.
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { Delete02Icon, Folder01Icon, Search01Icon } from '@hugeicons/core-free-icons'
@@ -13,7 +13,7 @@ import { Delete02Icon, Folder01Icon, Search01Icon } from '@hugeicons/core-free-i
 import ArcGallery from '../components/ArcGallery.jsx'
 import CardWheel from '../components/CardWheel.jsx'
 import Dock from '../components/Dock.jsx'
-import EditPanel from '../components/EditPanel.jsx'
+import EditBoard from '../components/EditBoard.jsx'
 import FavoritesRail from '../components/FavoritesRail.jsx'
 import MasteryDial from '../components/MasteryDial.jsx'
 import {
@@ -113,6 +113,13 @@ export default function FileView({
     const [dockVisible, setDockVisible] = useState(true)
     const [flipRequest, setFlipRequest] = useState(0)
     const [editing, setEditing] = useState(false)
+    const [editorPresent, setEditorPresent] = useState(false)
+    const [stageTop, setStageTop] = useState(0)
+    const [editDraft, setEditDraft] = useState(null)
+    const [editSide, setEditSide] = useState('front')
+    const [editError, setEditError] = useState('')
+    const [editSaving, setEditSaving] = useState(false)
+    const [unsaved, setUnsaved] = useState(null)
     const [createMenuOpen, setCreateMenuOpen] = useState(false)
     const [folderPromptOpen, setFolderPromptOpen] = useState(false)
     const [folderDraft, setFolderDraft] = useState('')
@@ -129,6 +136,9 @@ export default function FileView({
     const itemIdRef = useRef(itemId)
     const scrollTopRef = useRef(0)
     const pendingEditId = useRef(null)
+    const savedEdit = useRef(null)
+    const leftRef = useRef(null)
+    const editorLeaveTimer = useRef(null)
     const folderTimer = useRef(null)
     const cancelTitle = useRef(false)
     const cancelRename = useRef(false)
@@ -483,6 +493,231 @@ export default function FileView({
         changed()
     }
 
+    function codePoints(value) {
+        return [...String(value ?? '')].length
+    }
+
+    function editBaseline() {
+        if (savedEdit.current && active && savedEdit.current.id === active.id) {
+            return savedEdit.current
+        }
+        if (!active) {
+            return { title: '', body: '' }
+        }
+        return { title: active.title, body: active.body || '' }
+    }
+
+    function editProblem() {
+        if (!editDraft || !editDirty()) {
+            return ''
+        }
+        const title = editDraft.title.trim()
+        if (title === '') {
+            return 'Title is required'
+        }
+        if (codePoints(title) > 120) {
+            return 'Title must be at most 120 characters'
+        }
+        if (codePoints(editDraft.body) > 4000) {
+            return 'Body must be at most 4000 characters'
+        }
+        return ''
+    }
+
+    function editDirty() {
+        if (!editing || !editDraft || !active || editDraft.id !== active.id) {
+            return false
+        }
+        const base = editBaseline()
+        return editDraft.title !== base.title || editDraft.body !== base.body
+    }
+
+    function editCanSave() {
+        if (!editDirty() || editSaving || !editDraft) {
+            return false
+        }
+        const title = editDraft.title.trim()
+        return title !== '' && codePoints(title) <= 120 && codePoints(editDraft.body) <= 4000
+    }
+
+    // The editor stays one beat after Edit closes, so it can leave instead of vanishing.
+    useEffect(() => {
+        if (editing && editDraft) {
+            window.clearTimeout(editorLeaveTimer.current)
+            setEditorPresent(true)
+            return undefined
+        }
+        editorLeaveTimer.current = window.setTimeout(() => setEditorPresent(false), 220)
+        return () => window.clearTimeout(editorLeaveTimer.current)
+    }, [editing, editDraft])
+
+    // On a narrow page the card sits under the wheel. The measured height is the
+    // gap. While editing, the wheel is collapsed and the last height is kept,
+    // so closing Edit can slide the card back down.
+    useLayoutEffect(() => {
+        const node = leftRef.current
+        if (!node) {
+            return undefined
+        }
+        const measure = () => {
+            if (node.offsetHeight < 8) {
+                return
+            }
+            const next = node.offsetHeight + 28
+            setStageTop((current) => (current === next ? current : next))
+        }
+        measure()
+        const observer = new ResizeObserver(measure)
+        observer.observe(node)
+        return () => observer.disconnect()
+    }, [editing, cards.length])
+
+    function beginEdit() {
+        if (!active) {
+            return
+        }
+        const base = { id: active.id, title: active.title, body: active.body || '' }
+        savedEdit.current = base
+        setEditDraft(base)
+        setEditSide('front')
+        setEditError('')
+        setUnsaved(null)
+        setEditing(true)
+    }
+
+    useEffect(() => {
+        if (!editing || !active) {
+            return
+        }
+        setEditDraft((current) => {
+            if (current && current.id === active.id) {
+                return current
+            }
+            const base = { id: active.id, title: active.title, body: active.body || '' }
+            savedEdit.current = base
+            return base
+        })
+    }, [editing, active])
+
+    useEffect(() => {
+        if (!editing) {
+            return undefined
+        }
+        const onKeyDown = (event) => {
+            const target = event.target
+            const typing = target instanceof HTMLElement
+                && target.closest('input, textarea, [contenteditable="true"]')
+            if (event.key === 'Escape') {
+                if (unsaved) {
+                    event.preventDefault()
+                    setUnsaved(null)
+                    return
+                }
+                if (typing) {
+                    event.preventDefault()
+                    target.blur()
+                    return
+                }
+                event.preventDefault()
+                askOrRun('close')
+                return
+            }
+            if (typing || unsaved) {
+                return
+            }
+            if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
+                event.preventDefault()
+                const count = cardsWithBody.length
+                if (!count) {
+                    return
+                }
+                const direction = event.key === 'ArrowRight' ? 1 : -1
+                const index = (activeIndex + direction + count) % count
+                askOrRun({ index })
+            }
+        }
+        window.addEventListener('keydown', onKeyDown)
+        return () => window.removeEventListener('keydown', onKeyDown)
+    }, [editing, unsaved, cardsWithBody.length, activeIndex, editDraft, active])
+
+    async function commitEdit() {
+        if (!editDraft) {
+            return false
+        }
+        const title = editDraft.title.trim()
+        if (title === '') {
+            setEditError('Title is required')
+            return false
+        }
+        if (codePoints(title) > 120) {
+            setEditError('Title must be at most 120 characters')
+            return false
+        }
+        if (codePoints(editDraft.body) > 4000) {
+            setEditError('Body must be at most 4000 characters')
+            return false
+        }
+        setEditSaving(true)
+        const result = await saveCard(editDraft.id, { title, body: editDraft.body })
+        setEditSaving(false)
+        if (result && result.error) {
+            setEditError(typeof result.error === 'string' ? result.error : 'Something went wrong.')
+            return false
+        }
+        const base = { id: editDraft.id, title, body: editDraft.body }
+        savedEdit.current = base
+        setEditDraft(base)
+        setEditError('')
+        return true
+    }
+
+    function finishClose() {
+        setUnsaved(null)
+        setEditError('')
+        setEditing(false)
+    }
+
+    function switchCard(index) {
+        setEditSide('front')
+        setEditError('')
+        setUnsaved(null)
+        selectCard(index)
+    }
+
+    function askOrRun(action) {
+        if (editDirty()) {
+            setUnsaved(action)
+            return
+        }
+        if (action === 'close') {
+            finishClose()
+            return
+        }
+        switchCard(action.index)
+    }
+
+    async function confirmUnsaved(choice) {
+        const action = unsaved
+        if (!action) {
+            return
+        }
+        if (choice === 'cancel') {
+            setUnsaved(null)
+            return
+        }
+        if (choice === 'save') {
+            const ok = await commitEdit()
+            if (!ok) {
+                return
+            }
+        }
+        if (action === 'close') {
+            finishClose()
+            return
+        }
+        switchCard(action.index)
+    }
+
     async function saveCard(id, values) {
         const renamed = await renameCard(id, values.title)
         if (renamed && renamed.error) {
@@ -763,7 +998,7 @@ export default function FileView({
     ) : null
 
     return (
-        <div className="file-view file-view--panel" data-theme={effectiveTheme}>
+        <div className={`file-view file-view--panel${editing ? ' file-view--editing' : ''}`} data-theme={effectiveTheme}>
             <header className="file-view__topbar">
                 <button
                     type="button"
@@ -835,8 +1070,11 @@ export default function FileView({
                 </button>
             </header>
 
-            <div className="file-view__columns">
-                <aside className="file-view__left">
+            <div
+                className="file-view__columns"
+                style={stageTop > 0 ? { '--file-stage-top': `${stageTop}px` } : undefined}
+            >
+                <aside className="file-view__left" ref={leftRef}>
                     <div className="file-view__folders">
                         {childFolders.map((child) => (
                             <div className="file-view__folder-row" key={child.id}>
@@ -938,13 +1176,50 @@ export default function FileView({
                         className="file-view__stage"
                         cards={cardsWithBody}
                         activeIndex={activeIndex}
-                        onActiveIndexChange={selectCard}
+                        onActiveIndexChange={(index) => askOrRun({ index })}
                         flipRequest={flipRequest}
                         arrangement="deck"
                         zoom="focused"
+                        dragEnabled
+                        keysEnabled={!editing}
+                        face={editing ? editSide : undefined}
+                        onFaceChange={(next) => {
+                            if (editing) {
+                                setEditSide(next)
+                            }
+                        }}
+                        large={editing}
+                        preview={editing && editDraft && active && editDraft.id === active.id
+                            ? { title: editDraft.title, body: editDraft.body }
+                            : null}
                         focusExtra={masteryButtons}
                         theme={effectiveTheme}
                     />
+                ) : null}
+
+                {editorPresent && editDraft ? (
+                    <div className={`file-view__editor${editing ? '' : ' file-view__editor--leave'}`}>
+                    <EditBoard
+                        title={editDraft.title}
+                        body={editDraft.body}
+                        side={editSide}
+                        saving={editSaving}
+                        error={editError || editProblem() || null}
+                        canSave={editCanSave()}
+                        onTitleChange={(value) => {
+                            setEditError('')
+                            setEditDraft((current) => current ? { ...current, title: value } : current)
+                        }}
+                        onBodyChange={(value) => {
+                            setEditError('')
+                            setEditDraft((current) => current ? { ...current, body: value } : current)
+                        }}
+                        onFocusTitle={() => setEditSide('front')}
+                        onFocusBody={() => setEditSide('back')}
+                        onSave={() => { commitEdit() }}
+                        onClose={() => askOrRun('close')}
+                    />
+                    </div>
                 ) : null}
 
                 <aside className="file-view__right">
@@ -959,7 +1234,7 @@ export default function FileView({
             </div>
 
             <Dock
-                visible={dockVisible}
+                visible={dockVisible && !editing}
                 favoriteActive={Boolean(active && active.favorite)}
                 onFavorite={() => {
                     if (active) {
@@ -969,7 +1244,7 @@ export default function FileView({
                 onCreate={() => setCreateMenuOpen((open) => !open)}
                 onEdit={() => {
                     if (active) {
-                        setEditing(true)
+                        beginEdit()
                     }
                 }}
                 onDelete={() => {
@@ -1064,13 +1339,39 @@ export default function FileView({
                 </div>
             ) : null}
 
-            <EditPanel
-                open={editing}
-                card={active ? { id: active.id, title: active.title, body: active.body } : null}
-                onClose={() => setEditing(false)}
-                onSave={saveCard}
-                theme={effectiveTheme}
-            />
+            {unsaved ? (
+                <div className="file-view__prompt-layer">
+                    <div
+                        className="file-view__prompt"
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby="unsaved-title"
+                    >
+                        <h2 id="unsaved-title" className="file-view__prompt-title">
+                            {`Save changes to “${(editDraft && editDraft.title.trim()) || 'this card'}”?`}
+                        </h2>
+                        {editProblem() ? (
+                            <p className="file-view__prompt-error" role="alert">{editProblem()}</p>
+                        ) : null}
+                        <div className="file-view__prompt-actions">
+                            <button type="button" className="file-view__button" onClick={() => confirmUnsaved('cancel')}>
+                                Cancel
+                            </button>
+                            <button type="button" className="file-view__button" onClick={() => confirmUnsaved('discard')}>
+                                Discard
+                            </button>
+                            <button
+                                type="button"
+                                className="file-view__button file-view__button--primary"
+                                disabled={!editCanSave()}
+                                onClick={() => confirmUnsaved('save')}
+                            >
+                                Save
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            ) : null}
         </div>
     )
 }

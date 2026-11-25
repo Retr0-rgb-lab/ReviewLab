@@ -13,36 +13,49 @@
  */
 
 .app-root {
-    --rl-surface: #ffffff;
-    --rl-surface-raised: #f6f6f7;
-    --rl-ink: #18181b;
-    --rl-ink-muted: #6b7280;
-    --rl-line: rgba(24, 24, 27, 0.14);
-    --rl-accent: #3d8bff;
-    --rl-danger: #d92d20;
-    --rl-scrim: rgba(24, 24, 27, 0.32);
-    --rl-shadow: 0 24px 60px -24px rgba(24, 24, 27, 0.45);
-    --search-layer-surface: #ffffff;
-    --search-layer-text: #18181b;
+    /* Warm paper. The page is the desk. Cards and panels use --rl-surface. */
+    --rl-canvas: #f3eee6;
+    --rl-surface: #fffdf8;
+    --rl-surface-raised: #e7e0d4;
+    --rl-ink: #2c261e;
+    --rl-ink-muted: #6e6458;
+    --rl-line: rgba(44, 38, 30, 0.14);
+    --rl-accent: #b4532a;
+    --rl-danger: #b9382b;
+    --rl-scrim: rgba(44, 38, 30, 0.32);
+    --rl-edge-light: rgba(255, 252, 247, 0.95);
+    --rl-edge-deep: rgba(44, 38, 30, 0.28);
+    --rl-shadow: 0 1px 2px rgba(44, 38, 30, 0.14), 0 22px 44px -20px rgba(44, 38, 30, 0.34);
+    --rl-shadow-lift: 0 1px 2px rgba(44, 38, 30, 0.08), 0 36px 60px -16px rgba(44, 38, 30, 0.22);
+    --mastery-master: #2f6f45;
+    --mastery-not-mastered: #b9382b;
+    --search-layer-surface: #fffdf8;
+    --search-layer-text: #2c261e;
 
     min-height: 100vh;
-    background: var(--rl-surface);
+    background: var(--rl-canvas);
     color: var(--rl-ink);
     font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
 .app-root--dark {
-    --rl-surface: #101014;
-    --rl-surface-raised: #1c1c22;
-    --rl-ink: #f4f4f5;
-    --rl-ink-muted: #a1a1aa;
-    --rl-line: rgba(255, 255, 255, 0.16);
-    --rl-accent: #7aa7ff;
-    --rl-danger: #f97066;
+    --rl-canvas: #1a1612;
+    --rl-surface: #262119;
+    --rl-surface-raised: #312a22;
+    --rl-ink: #f6f1e8;
+    --rl-ink-muted: #b6ab9e;
+    --rl-line: rgba(246, 241, 232, 0.16);
+    --rl-accent: #e4b07a;
+    --rl-danger: #f0a094;
     --rl-scrim: rgba(0, 0, 0, 0.55);
-    --rl-shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.8);
-    --search-layer-surface: #101014;
-    --search-layer-text: #f4f4f5;
+    --rl-edge-light: rgba(246, 241, 232, 0.08);
+    --rl-edge-deep: rgba(0, 0, 0, 0.55);
+    --rl-shadow: 0 1px 2px rgba(0, 0, 0, 0.45), 0 22px 44px -18px rgba(0, 0, 0, 0.62);
+    --rl-shadow-lift: 0 1px 2px rgba(0, 0, 0, 0.35), 0 40px 64px -14px rgba(0, 0, 0, 0.5);
+    --mastery-master: #86d4a4;
+    --mastery-not-mastered: #f0a094;
+    --search-layer-surface: #262119;
+    --search-layer-text: #f6f1e8;
 }
 
 /* The message of a failed call. It stays until the next action succeeds. */
@@ -130,7 +143,7 @@
 .confirm-dialog__button--danger {
     background: var(--rl-danger);
     border-color: var(--rl-danger);
-    color: #ffffff;
+    color: var(--rl-canvas);
 }
 
 /* Empty and error states. */

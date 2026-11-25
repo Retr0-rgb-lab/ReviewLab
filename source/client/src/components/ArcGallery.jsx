@@ -13,11 +13,12 @@
 // The keyboard, the drag that changes the card and the pinch that changes the
 // zoom all live here, so the two views share the same feel.
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { HugeiconsIcon } from '@hugeicons/react'
 import { StarIcon } from '@hugeicons/core-free-icons'
 import FlipCard from './react-bits/FlipCard.jsx'
+import { renderCardBody } from '../views/cardBody.jsx'
 import './ArcGallery.css'
 
 // The cylinder the cards stand on.
@@ -168,6 +169,19 @@ function deckPlace(index, activeIndex, length) {
     }
 }
 
+function deckSize(viewport, large) {
+    if (large) {
+        if (viewport < 900) {
+            return { w: Math.min(viewport - 32, 440), h: Math.round(viewport * 0.36) }
+        }
+        return {
+            w: Math.min(640, Math.round(viewport * 0.34)),
+            h: Math.min(620, Math.round((viewport - 140) * 0.86)),
+        }
+    }
+    return rowSizeFor(viewport)
+}
+
 function rowSizeFor(viewport) {
     if (viewport < 720) {
         return ROW_NARROW
@@ -188,6 +202,12 @@ export default function ArcGallery({
     focusExtra = null,
     flipRequest = undefined,
     arrangement = 'arc',
+    dragEnabled = true,
+    keysEnabled = true,
+    face,
+    onFaceChange = null,
+    preview = null,
+    large = false,
     theme = 'White',
     className = '',
 }) {
@@ -204,7 +224,37 @@ export default function ArcGallery({
     const flipRequestRef = useRef(flipRequest)
     const row = arrangement === 'row' || arrangement === 'deck'
     const activeCardRef = useRef(null)
-    const cardSize = row ? rowSizeFor(viewport) : { w: 320, h: 440 }
+    const flippedRef = useRef({})
+    const galleryRef = useRef(null)
+    const settleTimer = useRef(null)
+    const [fitted, setFitted] = useState(null)
+    const cardSize = row
+        ? (large && fitted ? fitted : rowSizeFor(viewport))
+        : { w: 320, h: 440 }
+
+    // In edit mode the card takes the same rectangle as the editor pane.
+    // Layout, not a passive effect, so the first paint is already the pane size.
+    useLayoutEffect(() => {
+        if (!large) {
+            setFitted(null)
+            return undefined
+        }
+        const node = galleryRef.current
+        if (!node) {
+            return undefined
+        }
+        const measure = () => {
+            const rect = node.getBoundingClientRect()
+            setFitted({
+                w: Math.max(240, Math.round(rect.width - 40)),
+                h: Math.max(220, Math.round(rect.height - 24)),
+            })
+        }
+        measure()
+        const observer = new ResizeObserver(measure)
+        observer.observe(node)
+        return () => observer.disconnect()
+    }, [large])
 
     useEffect(() => {
         const onResize = () => setViewport(window.innerWidth)
@@ -238,23 +288,17 @@ export default function ArcGallery({
 
     // A new active card starts on its front side.
     useEffect(() => {
-        setFlippedIds((previous) => {
-            const keys = Object.keys(previous)
-            if (!keys.length) {
-                return previous
-            }
-            const next = {}
-            let changed = false
-            for (const key of keys) {
-                if (key === cards[activeIndex]?.id) {
-                    changed = true
-                    continue
-                }
-                next[key] = previous[key]
-            }
-            return changed ? next : previous
-        })
-    }, [activeIndex, cards])
+        // A newly selected card starts on its front. Refreshing the same card
+        // must not undo a flip that just happened.
+        const id = cards[activeIndex]?.id
+        if (!id || !flippedRef.current[id]) {
+            return
+        }
+        const next = { ...flippedRef.current }
+        delete next[id]
+        flippedRef.current = next
+        setFlippedIds(next)
+    }, [activeIndex])
 
     const stepCard = useCallback((direction) => {
         if (!count) {
@@ -270,14 +314,36 @@ export default function ArcGallery({
         if (!id) {
             return
         }
-        setFlippedIds((previous) => {
-            const next = { ...previous, [id]: !previous[id] }
-            if (typeof onFlip === 'function') {
-                onFlip(id, next[id])
-            }
-            return next
-        })
-    }, [onFlip])
+        const nextBack = !flippedRef.current[id]
+        const next = { ...flippedRef.current, [id]: nextBack }
+        flippedRef.current = next
+        setFlippedIds(next)
+        if (typeof onFlip === 'function') {
+            onFlip(id, nextBack)
+        }
+        if (typeof onFaceChange === 'function') {
+            onFaceChange(nextBack ? 'back' : 'front')
+        }
+    }, [onFlip, onFaceChange])
+
+    // Follow the face the editor asks for. A click updates that face itself,
+    // so this does not run again for the same value and cannot flip the card back.
+    useEffect(() => {
+        if (face !== 'front' && face !== 'back') {
+            return
+        }
+        const id = cards[activeIndex]?.id
+        if (!id) {
+            return
+        }
+        const wantBack = face === 'back'
+        if (Boolean(flippedRef.current[id]) === wantBack) {
+            return
+        }
+        const next = { ...flippedRef.current, [id]: wantBack }
+        flippedRef.current = next
+        setFlippedIds(next)
+    }, [face, activeIndex, cards])
 
     // A later change of flipRequest flips the active card. The value present
     // at mount does not, so a host can count up from zero without a first flip.
@@ -372,6 +438,9 @@ export default function ArcGallery({
     // Enter is taken on the way down, so the card's own key handler cannot
     // flip a private copy of the state. The gallery is the source of truth.
     useEffect(() => {
+        if (!keysEnabled) {
+            return undefined
+        }
         const onEnter = (event) => {
             if (event.key !== 'Enter' || event.ctrlKey || event.metaKey || event.altKey) {
                 return
@@ -420,7 +489,7 @@ export default function ArcGallery({
         }
         window.addEventListener('keydown', onKeyDown)
         return () => window.removeEventListener('keydown', onKeyDown)
-    }, [stepCard])
+    }, [stepCard, keysEnabled])
 
     // The drag that changes the card. The window listens, so the card does
     // not have to give up the pointer to the gallery. The card follows the
@@ -460,11 +529,12 @@ export default function ArcGallery({
                 return
             }
             dragRef.current = null
-            setDrag({ x: 0, y: 0, origin: null })
             if (cancelled) {
+                setDrag({ x: 0, y: 0, origin: null })
                 return
             }
             if (!gesture.moved) {
+                setDrag({ x: 0, y: 0, origin: null })
                 // A click without a drag flips the card that is in front.
                 flipCard(cards[activeIndex]?.id)
                 return
@@ -475,6 +545,21 @@ export default function ArcGallery({
             const velocity = recentVelocity(gesture.hist, performance.now())
             const speed = Math.hypot(velocity.x, velocity.y)
             const flicked = travel >= DRAG_THRESHOLD && speed >= DRAG_FLICK
+            if (!(travel >= DRAG_COMMIT || flicked)) {
+                // The transition has to be on the float before the translate
+                // changes, or the browser paints the jump in one frame.
+                const origin = gesture.origin
+                setDrag({ x: dx, y: dy, origin, settling: true })
+                window.clearTimeout(settleTimer.current)
+                requestAnimationFrame(() => {
+                    setDrag({ x: 0, y: 0, origin, settling: true })
+                    settleTimer.current = window.setTimeout(() => {
+                        setDrag((current) => (current.settling ? { x: 0, y: 0, origin: null } : current))
+                    }, 240)
+                })
+                return
+            }
+            setDrag({ x: 0, y: 0, origin: null })
             if (travel >= DRAG_COMMIT || flicked) {
                 const horizontal = Math.abs(dx) >= Math.abs(dy)
                 const forward = horizontal ? dx < 0 : dy < 0
@@ -494,7 +579,7 @@ export default function ArcGallery({
     }, [cards, activeIndex, flipCard, stepCard])
 
     const onPointerDown = useCallback((event) => {
-        if (event.button !== 0) {
+        if (!dragEnabled || event.button !== 0) {
             return
         }
         if (event.target.closest('button, input, textarea, a, [data-no-drag]')) {
@@ -507,7 +592,7 @@ export default function ArcGallery({
             moved: false,
             hist: [],
         }
-    }, [])
+    }, [dragEnabled])
 
     const layouts = useMemo(() => {
         if (!count) {
@@ -530,6 +615,7 @@ export default function ArcGallery({
 
     return (
         <div
+            ref={galleryRef}
             className={`arc-gallery${row ? ' arc-gallery--row' : ''} ${className}`}
             data-theme={theme}
             onPointerDown={onPointerDown}
@@ -554,19 +640,24 @@ export default function ArcGallery({
                         ? {
                             position: 'fixed',
                             zIndex: 100,
-                            left: drag.origin.left + drag.x,
-                            top: drag.origin.top + drag.y,
+                            left: drag.origin.left,
+                            top: drag.origin.top,
                             width: drag.origin.width,
                             height: drag.origin.height,
                             margin: 0,
+                            transform: `translate3d(${drag.x}px, ${drag.y}px, 0)`,
                         }
                         : undefined
+                    const shown = isActive && preview ? preview : null
+                    const shownTitle = shown ? shown.title : card.title
+                    const shownBody = shown ? shown.body : card.body
+                    const renderedBody = renderCardBody(shownBody)
                     const faceClass = focusExtra && isActive ? 'arc-gallery__face arc-gallery__face--with-extra' : 'arc-gallery__face'
                     const front = (
                         <div className={faceClass}>
                             <div className="arc-gallery__head">
                                 <span className="arc-gallery__status" data-mastery={card.mastery} aria-hidden="true" />
-                                <h2 className="arc-gallery__title">{card.title}</h2>
+                                <h2 className="arc-gallery__title">{shownTitle}</h2>
                                 {card.favorite ? (
                                     <HugeiconsIcon className="arc-gallery__star" icon={StarIcon} size={18} aria-hidden="true" />
                                 ) : null}
@@ -575,9 +666,9 @@ export default function ArcGallery({
                     )
                     const back = (
                         <div className={`${faceClass} arc-gallery__face--back`}>
-                            <p className="arc-gallery__body">
-                                {card.body ? card.body : 'This card has no content yet.'}
-                            </p>
+                            <div className="arc-gallery__body">
+                                {renderedBody || 'This card has no content yet.'}
+                            </div>
                         </div>
                     )
                     const faceNode = (
@@ -606,14 +697,17 @@ export default function ArcGallery({
                         : null
                     return (
                         <div
-                            className="arc-gallery__card"
+                            className={`arc-gallery__card${isActive ? '' : ' arc-gallery__card--behind'}`}
                             key={card.id}
                             ref={isActive ? activeCardRef : null}
                             style={{ ...style, visibility: floating ? 'hidden' : undefined }}
                             aria-hidden={!isActive}
                         >
                             {floating ? createPortal(
-                                <div className="arc-gallery__float" style={floatStyle}>
+                                <div
+                                    className={`arc-gallery__float${drag.settling ? ' arc-gallery__float--settling' : ''}`}
+                                    style={floatStyle}
+                                >
                                     {faceNode}
                                     {extraNode}
                                 </div>,

@@ -349,7 +349,7 @@ blur    = Math.abs(d) * blur;
 
 - 一个放大的 `MasteryDial`（`size={260}`）。
 - 完成率：已标记张数 / 本层卡片张数，写出分子和分母。本层没有卡片时显示 `This level has no cards.`，不显示 0%，不除零。
-- 未掌握的卡的清单，按创建时间从早到晚。点一条打开 `/zen/:folderId/:itemId`，落在那一张上。
+- 未掌握的卡的清单，按创建时间从早到晚。点一条打开普通视图 `/folder/:folderId/:itemId`，落在那一张上。掌握清单同样。2026-11-25。
 
 ## 4. 路由表
 
@@ -359,7 +359,7 @@ blur    = Math.abs(d) * blur;
 | `/folder/:folderId` | FileView | 这一层没有卡片时停在这里；有卡片时重定向到最早创建的那张，地址变成 `/folder/:folderId/:itemId` |
 | `/folder/:folderId/:itemId` | FileView | 聚焦 `itemId` 那张卡。`itemId` 不在这一层时，回落到最早创建的那张并 `replace` 地址 |
 | `/zen/:folderId` | ZenView | 禅模式，不定位到某一张。刷新落在本层最早创建的那张卡 |
-| `/zen/:folderId/:itemId` | ZenView | 禅模式，聚焦那一张。**搜索打开卡片、统计清单点一条，都用这个** |
+| `/zen/:folderId/:itemId` | ZenView | 禅模式，聚焦那一张。搜索打开卡片用这个。统计清单不走这里 |
 | `/stats/:folderId` | StatsView | 统计 |
 
 `itemId` 不在这一层时的回落规则：**用 `replace` 换掉地址**，不要往历史里塞一条。

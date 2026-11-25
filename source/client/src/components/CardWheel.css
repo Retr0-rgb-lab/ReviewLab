@@ -31,15 +31,6 @@
     cursor: grabbing;
 }
 
-/* The wheel can live outside the frame of the application, so the dark theme
-   carries its own values. */
-.card-wheel[data-theme='Dark'] {
-    --rl-surface: #101014;
-    --rl-ink: #f4f4f5;
-    --rl-ink-muted: #a1a1aa;
-    --rl-line: rgba(255, 255, 255, 0.16);
-}
-
 /* Every card is placed by its transform, so the wheel can turn as one. */
 .card-wheel__card {
     position: absolute;
@@ -69,7 +60,7 @@
 }
 
 .card-wheel__card--active {
-    border: 2px solid var(--rl-accent, #3d8bff);
+    border: 2px solid var(--rl-ink, #2c261e);
 }
 
 .card-wheel__icon {
@@ -97,11 +88,11 @@
 }
 
 .card-wheel__status--mastered {
-    background: #16a34a;
+    background: var(--mastery-master);
 }
 
 .card-wheel__status--unmastered {
-    background: #dc2626;
+    background: var(--mastery-not-mastered);
 }
 
 .card-wheel__status--unmarked {

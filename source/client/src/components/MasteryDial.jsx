@@ -7,9 +7,6 @@
 import CometDial from './react-bits/CometDial.jsx'
 import './MasteryDial.css'
 
-const MASTER_COLOR = '#16a34a'
-const NOT_MASTERED_COLOR = '#dc2626'
-
 // The share of the level that is mastered.
 // It returns the raw share, the share in percent for the ring, and whether the
 // level has no marked card at all.
@@ -35,7 +32,7 @@ export default function MasteryDial({
     const share = masteryShare(m, n)
     // The dial writes the percentage with this colour, so it has to follow the
     // theme of the application.
-    const ink = theme === 'Dark' ? '#f4f4f5' : '#18181b'
+    const ink = 'var(--rl-ink)'
 
     const dial = (
         <CometDial
@@ -45,12 +42,12 @@ export default function MasteryDial({
             step={1}
             unit="%"
             label="Mastery"
-            accent={MASTER_COLOR}
+            accent="var(--mastery-master)"
             ink={ink}
             readOnly
             size={size}
             sweep={270}
-            {...(share.empty ? {} : { restColor: NOT_MASTERED_COLOR })}
+            {...(share.empty ? {} : { restColor: 'var(--mastery-not-mastered)' })}
         />
     )
 

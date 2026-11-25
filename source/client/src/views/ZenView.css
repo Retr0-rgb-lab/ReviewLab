@@ -5,9 +5,8 @@
  * visible. Only the gallery and the three small buttons in the top right
  * corner are drawn.
  *
- * The colours come from the variables of the application theme. The two scopes
- * below hold the same values as the application frame, so the zen mode keeps
- * the colours of the theme even when it is drawn outside of that frame.
+ * The colours come from the application theme. This view stays inside that
+ * frame, so it does not keep a second copy of the palette.
  */
 
 .zen-view {
@@ -15,39 +14,9 @@
     inset: 0;
     z-index: 40;
     overflow: hidden;
-    background: var(--rl-surface);
+    background: var(--rl-canvas);
     color: var(--rl-ink);
     font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-}
-
-.zen-view[data-theme='White'] {
-    --rl-surface: #ffffff;
-    --rl-surface-raised: #f6f6f7;
-    --rl-ink: #18181b;
-    --rl-ink-muted: #6b7280;
-    --rl-line: rgba(24, 24, 27, 0.14);
-    --rl-accent: #3d8bff;
-}
-
-.zen-view[data-theme='Dark'] {
-    --rl-surface: #101014;
-    --rl-surface-raised: #1c1c22;
-    --rl-ink: #f4f4f5;
-    --rl-ink-muted: #a1a1aa;
-    --rl-line: rgba(255, 255, 255, 0.16);
-    --rl-accent: #7aa7ff;
-}
-
-.zen-view[data-theme='Dark'] .file-view__mastery-button--mastered[aria-pressed='true'] {
-    color: #4ade80;
-    border-color: #4ade80;
-    background: rgba(74, 222, 128, 0.16);
-}
-
-.zen-view[data-theme='Dark'] .file-view__mastery-button--unmastered[aria-pressed='true'] {
-    color: #f87171;
-    border-color: #f87171;
-    background: rgba(248, 113, 113, 0.16);
 }
 
 /* The gallery fills the screen. */

@@ -22,7 +22,7 @@
     border-radius: 32px;
     background: var(--rl-surface, #ffffff);
     color: var(--rl-ink, #18181b);
-    box-shadow: 0 20px 44px -24px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--rl-shadow), 0 2px 0 var(--rl-edge-deep);
     transform: translateX(-50%) translateY(0);
     opacity: 1;
     transition: transform 260ms ease, opacity 260ms ease;
@@ -88,33 +88,12 @@
 /* The favorite button is solid while the card is a favorite. */
 .dock__button--active,
 .dock__button--active:hover {
-    color: var(--rl-accent, #3d8bff);
-    background: rgba(61, 139, 255, 0.12);
+    color: #f0a500;
+    background: color-mix(in srgb, #f0a500 16%, transparent);
 }
 
 .dock__button--active .dock__label {
-    color: var(--rl-accent, #3d8bff);
-}
-
-/* The bar carries the theme of the application, so it reads the same in both. */
-.dock[data-theme='White'],
-.dock[data-theme='white'] {
-    --rl-surface: #ffffff;
-    --rl-surface-raised: #f6f6f7;
-    --rl-ink: #18181b;
-    --rl-ink-muted: #6b7280;
-    --rl-line: rgba(24, 24, 27, 0.14);
-    --rl-accent: #3d8bff;
-}
-
-.dock[data-theme='Dark'],
-.dock[data-theme='dark'] {
-    --rl-surface: #101014;
-    --rl-surface-raised: #1c1c22;
-    --rl-ink: #f4f4f5;
-    --rl-ink-muted: #a1a1aa;
-    --rl-line: rgba(255, 255, 255, 0.16);
-    --rl-accent: #7aa7ff;
+    color: #f0a500;
 }
 
 @media (prefers-reduced-motion: reduce) {

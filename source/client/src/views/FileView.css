@@ -63,6 +63,10 @@
 
 .file-view__name {
     margin: 0;
+    width: fit-content;
+    max-width: 100%;
+    padding-left: 10px;
+    border-left: 2px solid var(--rl-accent);
     font-family: sans-serif;
     font-size: 34px;
     font-weight: 600;
@@ -122,7 +126,7 @@
 }
 
 .file-view__crumb-link:hover {
-    color: var(--rl-accent);
+    color: var(--rl-ink);
 }
 
 .file-view__crumb-link:focus-visible {
@@ -197,12 +201,99 @@
     position: absolute;
     inset: 0;
     z-index: 4;
+    /* auto, with the inset, stretches to the pane. 100% would ignore right and bottom. */
+    width: auto;
+    height: auto;
+    min-height: 0;
     overflow: visible;
     pointer-events: none;
+    transition:
+        left 360ms cubic-bezier(0.16, 1, 0.3, 1),
+        right 360ms cubic-bezier(0.16, 1, 0.3, 1),
+        top 360ms cubic-bezier(0.16, 1, 0.3, 1),
+        bottom 360ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .file-view__stage .arc-gallery__card {
     pointer-events: auto;
+}
+
+/* Edit mode: the side columns leave, and the card and the editor share
+   the space under the top bar. The stage transition lives on the stage
+   itself, so leaving Edit animates back instead of snapping. */
+.file-view__left,
+.file-view__right,
+.file-view__center {
+    transition: opacity 280ms ease;
+}
+
+.file-view--editing .file-view__left,
+.file-view--editing .file-view__right,
+.file-view--editing .file-view__center {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 180ms ease, visibility 0s linear 180ms;
+}
+
+.file-view--editing .file-view__stage {
+    left: 8px;
+    right: calc(50% + 16px);
+    top: 8px;
+    bottom: 8px;
+}
+
+.file-view__editor {
+    position: absolute;
+    z-index: 5;
+    left: calc(50% + 16px);
+    right: 8px;
+    top: 8px;
+    bottom: 8px;
+    min-width: 0;
+    min-height: 0;
+    animation: file-editor-in 320ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.file-view__editor--leave {
+    animation: file-editor-out 200ms cubic-bezier(0.4, 0, 1, 1) forwards;
+    pointer-events: none;
+}
+
+@keyframes file-editor-in {
+    from {
+        opacity: 0;
+        transform: translate3d(20px, 0, 0);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@keyframes file-editor-out {
+    from {
+        opacity: 1;
+        transform: none;
+    }
+    to {
+        opacity: 0;
+        transform: translate3d(16px, 0, 0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .file-view__stage,
+    .file-view__left,
+    .file-view__right,
+    .file-view__center {
+        transition: none;
+    }
+
+    .file-view__editor,
+    .file-view__editor--leave {
+        animation: none;
+    }
 }
 
 .file-view__left {
@@ -373,27 +464,15 @@
 }
 
 .file-view__mastery-button--mastered[aria-pressed='true'] {
-    color: #16a34a;
-    border-color: #16a34a;
-    background: rgba(22, 163, 74, 0.12);
+    color: var(--mastery-master);
+    border-color: var(--mastery-master);
+    background: color-mix(in srgb, var(--mastery-master) 16%, transparent);
 }
 
 .file-view__mastery-button--unmastered[aria-pressed='true'] {
-    color: #dc2626;
-    border-color: #dc2626;
-    background: rgba(220, 38, 38, 0.12);
-}
-
-.file-view[data-theme='Dark'] .file-view__mastery-button--mastered[aria-pressed='true'] {
-    color: #4ade80;
-    border-color: #4ade80;
-    background: rgba(74, 222, 128, 0.16);
-}
-
-.file-view[data-theme='Dark'] .file-view__mastery-button--unmastered[aria-pressed='true'] {
-    color: #f87171;
-    border-color: #f87171;
-    background: rgba(248, 113, 113, 0.16);
+    color: var(--mastery-not-mastered);
+    border-color: var(--mastery-not-mastered);
+    background: color-mix(in srgb, var(--mastery-not-mastered) 16%, transparent);
 }
 
 /* ---------------------------------------------------------- the empty level */
@@ -415,9 +494,9 @@
 }
 
 .file-view__button--primary {
-    border-color: var(--rl-accent);
-    background: var(--rl-accent);
-    color: #ffffff;
+    border-color: var(--rl-ink);
+    background: var(--rl-ink);
+    color: var(--rl-surface);
 }
 
 /* ------------------------------------------------------ the create menu */
@@ -572,6 +651,49 @@
         max-width: 100%;
         height: 100%;
     }
+
+    /* The card drops below the wheel. It stays absolute so the peek is not clipped. */
+    .file-view__stage {
+        top: var(--file-stage-top, 0px);
+        right: 72px;
+        bottom: 88px;
+        left: 0;
+    }
+
+    /* Editing stacks the two panes and takes the hidden wheel out of the flow,
+       so the card and the editor are not split by a blank band. */
+    .file-view--editing.file-view--panel {
+        min-height: calc(100dvh - 48px);
+    }
+
+    .file-view--editing .file-view__left,
+    .file-view--editing .file-view__right,
+    .file-view--editing .file-view__center {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: 0;
+        overflow: hidden;
+    }
+
+    .file-view--editing .file-view__columns {
+        min-height: calc(100dvh - 180px);
+    }
+
+    .file-view--editing .file-view__stage {
+        top: 8px;
+        right: 8px;
+        bottom: calc(50% + 8px);
+        left: 8px;
+    }
+
+    .file-view--editing .file-view__editor {
+        top: calc(50% + 8px);
+        right: 8px;
+        bottom: 8px;
+        left: 8px;
+        height: auto;
+    }
 }
 
 @media (max-width: 720px) {
@@ -612,12 +734,6 @@
         max-height: 200px;
     }
 
-    /* Keep the one card in the lower band, above the dock, not over the wheel. */
-    .file-view__stage {
-        top: auto;
-        height: 250px;
-        bottom: 88px;
-    }
 }
 
 /* The motion is a comfort, never a requirement. */

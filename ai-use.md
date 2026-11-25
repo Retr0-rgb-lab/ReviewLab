@@ -77,6 +77,41 @@ components were filled in.
 | Grok | `source/client/src/components/CardWheel.css` | The wheel cards sit on the left edge of their column. |
 | Grok | `source/client/src/components/MasteryDial.jsx` | The mastered and not-mastered counts sit under the ring, not under the wider label row. |
 | Grok | `source/client/src/components/MasteryDial.css` | The two counts are centered on the ring. The side labels stay level with the ring. |
+| Grok | `docs/specs/2026-11-23-reviewlab-edit-view-spec.md` | Draft of the edit view: a large card beside a large editor, Warm Tooltip on the style controls, Specular Button for Save. Not implemented. |
+| Grok | `source/client/src/components/react-bits/WarmTooltip.jsx` | Copied from React Bits. Tooltip group for the Bold, Italic and List controls. |
+| Grok | `source/client/src/components/react-bits/WarmTooltip.css` | Copied with Warm Tooltip. |
+| Grok | `source/client/src/components/react-bits/SpecularButton.jsx` | Copied from React Bits. The Save button on the edit board. |
+| Grok | `source/client/src/components/react-bits/SpecularButton.css` | Copied with Specular Button. |
+| Grok | `source/client/src/components/EditBoard.jsx` | The edit panel: title, styled body, and Save. |
+| Grok | `source/client/src/components/EditBoard.css` | Layout of the edit panel. |
+| Grok | `source/client/src/views/cardBody.jsx` | Renders bold, italic and bullets from the card body. |
+| Grok | `source/client/src/views/FileView.jsx` | Edit mode hides the side columns, keeps the card and the editor side by side, and asks before discarding changes. |
+| Grok | `source/client/src/views/FileView.css` | The two edit panes fill the space under the top bar. |
+| Grok | `source/client/src/components/ArcGallery.jsx` | The edit view can hold the card face, show a live draft, and turn drag and arrow keys off. A later pass keeps drag and click-to-flip on, and sizes the card to the editor pane. |
+| Grok | `source/tests/cases.mjs` | Check E.1 for the three marks in a card body. |
+| Grok | `source/client/src/views/StatsView.jsx` | Statistics is a ring plus two matching lists. A click opens one interactive card on this page. |
+| Grok | `source/client/src/views/StatsView.css` | Shared row style: bold question, smaller answer, ellipsis. The row entrance and the gliding highlight follow React Bits Animated List, without its frame or icons. An empty list is not drawn. A later pass lets the ring column fit the dial, opens the card by growing the row, and uses the dark mastery colours. |
+| Grok | `source/client/src/views/StatsView.jsx` | The current folder name returns to the file view. Answers and the folder count wait for the tree read. A list row opens that card in the ordinary file view. |
+| Grok | `source/client/src/App.jsx` | The statistics list no longer opens zen. |
+| Grok | `docs/specs/2026-11-25-reviewlab-warm-paper-spec.md` | Warm paper colours and a card-stack thickness. Later marked as the spec being implemented. |
+| Grok | `source/client/src/views.css` | Warm paper tokens for both themes: canvas, card, ink, ochre, mastery, and the two-layer shadow. |
+| Grok | `source/client/src/components/ArcGallery.css` | Card top edge, the darker edge of the card behind, and a longer shadow while a card is held. |
+| Grok | `source/client/src/components/ArcGallery.jsx` | The cards behind the front one are marked so only they show the paper edge. |
+| Grok | `source/client/src/components/MasteryDial.css` | A short dark copy under the ring. |
+| Grok | `source/client/src/components/MasteryDial.jsx` | The ring uses the mastery tokens. |
+| Grok | `source/client/src/components/Dock.css` | The bar uses the card shadow and a dark bottom lip. The favorite star stays gold. |
+| Grok | `source/client/src/components/EditBoard.css` | The editor uses the same shadow and top edge as the card. |
+| Grok | `source/client/src/views/FileView.css` | Mastery buttons use the tokens. Ochre marks the open folder and the focus ring. |
+| Grok | `source/client/src/views/StatsView.css` | Ochre marks the open folder on the statistics heading. |
+| Grok | `source/client/src/views/ZenView.css` | Zen uses the shared paper tokens instead of a second gray palette. |
+| Grok | `source/client/src/components/CardWheel.css` | Mastery dots use the tokens. The active card edge is ink. |
+| Grok | `source/client/src/components/FavoritesRail.css` | The rail no longer keeps a cold dark palette. The star stays gold. |
+| Grok | `docs/specs/2026-11-21-reviewlab-file-overview-spec.md` | A statistics row opens the ordinary file view on that card. |
+| Grok | `docs/specs/2026-11-21-reviewlab-implementation-contracts.md` | The same handoff, so the contract matches the file overview. |
+| Grok | `source/client/src/views/FileView.css` | Entering and leaving Edit both move the card. On a narrow page the card sits under the wheel, and Edit stacks the two panes. |
+| Grok | `source/client/src/components/ArcGallery.jsx` | A short drag eases back. Switching cards moves instead of jumping. The large card is measured before paint. |
+| Grok | `source/client/src/components/ArcGallery.css` | The card position and the drag release use a short ease. |
+| Grok | `source/client/src/App.jsx` | The statistics page reports a mastery change so the rest of the app reloads. |
 
 ## MiniMax Code, 20 November 2026
 
