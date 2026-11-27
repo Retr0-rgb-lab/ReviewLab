@@ -24,3 +24,27 @@
     width: 100%;
     min-width: 0;
 }
+
+
+/* Moss prototype shell: let the paper canvas breathe without forcing a fixed viewport. */
+.app-shell {
+    min-height: 100dvh;
+    overflow-x: clip;
+}
+
+.app-shell__content {
+    max-width: 1640px;
+    min-height: 100dvh;
+    padding: clamp(16px, 2.2vw, 36px);
+    padding-bottom: calc(clamp(16px, 2.2vw, 36px) + env(safe-area-inset-bottom));
+}
+
+.app-shell__main {
+    min-width: 0;
+}
+
+@media (max-width: 720px) {
+    .app-shell__content {
+        padding: 16px 14px calc(18px + env(safe-area-inset-bottom));
+    }
+}

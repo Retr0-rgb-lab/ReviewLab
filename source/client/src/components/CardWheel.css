@@ -105,3 +105,16 @@
         transition: none;
     }
 }
+
+
+/* Moss refinement: active cards keep their footprint while changing state. */
+.card-wheel__card {
+    box-sizing: border-box;
+    border: 1px solid var(--rl-line, rgba(24, 24, 27, 0.14));
+    align-items: center;
+}
+
+.card-wheel__card--active {
+    border: 1px solid var(--rl-brand, #18352e);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--rl-brand, #18352e) 14%, transparent), 0 8px 20px -12px rgba(24, 53, 46, 0.32);
+}

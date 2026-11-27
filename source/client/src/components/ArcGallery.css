@@ -271,3 +271,80 @@
         filter: blur(22px);
     }
 }
+
+
+/* Moss prototype: the flashcard is the hero surface. */
+.arc-gallery__card {
+    --arc-face-pad: 32px;
+    will-change: transform, opacity;
+    transition: transform 360ms cubic-bezier(0.16, 1, 0.3, 1), opacity 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.arc-gallery .flip-card {
+    --fc-shadow: #18352e;
+    --fc-shadow-o: 0.12;
+}
+
+.arc-gallery__face {
+    border-color: var(--rl-line);
+    border-radius: var(--rl-radius-xl);
+    background: var(--rl-surface);
+    box-shadow: inset 0 1px 0 var(--rl-edge-light), 0 1px 2px rgba(24, 53, 46, 0.06), 0 20px 42px rgba(24, 53, 46, 0.10);
+}
+
+.arc-gallery__card--behind .arc-gallery__face {
+    box-shadow: inset 0 1px 0 var(--rl-edge-light), inset -2px 0 0 var(--rl-edge-deep), 0 1px 2px rgba(24, 53, 46, 0.08), 0 14px 34px rgba(24, 53, 46, 0.07);
+}
+
+.arc-gallery__title {
+    font-family: var(--rl-font-sans);
+    font-size: clamp(1.7rem, 2.4vw, 2.35rem);
+    font-weight: 650;
+    line-height: 1.08;
+    letter-spacing: -0.04em;
+    color: var(--rl-brand);
+}
+
+.arc-gallery__status[data-mastery='mastered'] {
+    background: var(--rl-success);
+}
+
+.arc-gallery__star {
+    color: var(--rl-accent);
+}
+
+.arc-gallery__body {
+    font-family: var(--rl-font-sans);
+    font-size: 1.02rem;
+    line-height: 1.65;
+    color: var(--rl-ink-soft);
+}
+
+.arc-gallery__extra .file-view__mastery-button--mastered[aria-pressed='true'] {
+    background: var(--rl-success-soft);
+    border-color: var(--rl-success);
+    color: var(--rl-success);
+}
+
+.arc-gallery__float .flip-card__shadow,
+.arc-gallery__float--settling .flip-card__shadow {
+    filter: blur(24px);
+}
+
+@media (max-width: 720px) {
+    .arc-gallery__face {
+        border-radius: var(--rl-radius-lg);
+    }
+
+    .arc-gallery__title {
+        font-size: 1.55rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .arc-gallery__card,
+    .arc-gallery__mover,
+    .arc-gallery__float--settling {
+        transition: none;
+    }
+}

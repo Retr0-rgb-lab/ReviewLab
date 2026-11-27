@@ -162,3 +162,71 @@
     font-size: 0.82rem;
     color: var(--rl-danger, #d92d20);
 }
+
+
+/* Moss refinement: editing controls align to the same 40px action grid. */
+.edit-board__bar,
+.edit-board__tools,
+.edit-board__footer {
+    align-items: center;
+}
+
+.edit-board__close {
+    flex: 0 0 36px;
+    width: 36px;
+    height: 36px;
+    box-sizing: border-box;
+}
+
+.edit-board__tool {
+    min-height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    line-height: 1;
+}
+
+.edit-board__footer button {
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+}
+
+
+/* Save action: keep the WebGL shine behind, never above, the actual label. */
+.edit-board__footer .specular-button {
+    position: relative;
+    z-index: 0;
+    min-width: 92px;
+    min-height: 40px;
+    overflow: hidden;
+    color: #fffdf8 !important;
+    background: var(--rl-brand, #18352e);
+    border: 1px solid var(--rl-brand, #18352e);
+    isolation: isolate;
+}
+
+.edit-board__footer .specular-button__light {
+    z-index: 1;
+    pointer-events: none;
+}
+
+.edit-board__footer .specular-button__label {
+    position: relative;
+    z-index: 3;
+    display: inline-flex;
+    align-items: center;
+    min-height: 18px;
+    color: #fffdf8 !important;
+    -webkit-text-fill-color: #fffdf8;
+    opacity: 1;
+    visibility: visible;
+}
+
+.edit-board__footer .specular-button:hover:not(:disabled) {
+    background: var(--rl-brand-hover, #245447);
+    border-color: var(--rl-brand-hover, #245447);
+}

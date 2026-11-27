@@ -179,3 +179,190 @@
         padding: 12px;
     }
 }
+
+
+/* -------------------------------------------------------------------------
+   2026-11-27 Moss prototype
+   A pale paper canvas, deep ink-green decisions and quiet elevation.
+   This layer intentionally preserves the existing interaction contracts.
+   ------------------------------------------------------------------------- */
+.app-root {
+    --rl-canvas: #f6f7f2;
+    --rl-surface: #ffffff;
+    --rl-surface-subtle: #eef1ea;
+    --rl-surface-raised: #ffffff;
+    --rl-ink: #18352e;
+    --rl-ink-soft: #4d625a;
+    --rl-ink-muted: #7c8b83;
+    --rl-brand: #18352e;
+    --rl-brand-hover: #245447;
+    --rl-brand-pressed: #102a24;
+    --rl-accent: #b9874c;
+    --rl-accent-soft: #f2e7d5;
+    --rl-success: #34745a;
+    --rl-success-soft: #e2efe7;
+    --rl-warning: #b9783e;
+    --rl-warning-soft: #f7e9d9;
+    --rl-danger: #a94b49;
+    --rl-danger-soft: #f5e1df;
+    --rl-line: #dce3dc;
+    --rl-line-strong: #c7d2c9;
+    --rl-focus-ring: 0 0 0 3px rgba(185, 135, 76, 0.24);
+    --rl-edge-light: rgba(255, 255, 255, 0.92);
+    --rl-edge-deep: rgba(24, 53, 46, 0.16);
+    --rl-shadow: 0 1px 2px rgba(24, 53, 46, 0.05), 0 12px 34px rgba(24, 53, 46, 0.08);
+    --rl-shadow-lift: 0 2px 4px rgba(24, 53, 46, 0.06), 0 24px 56px rgba(24, 53, 46, 0.12);
+    --rl-shadow-popover: 0 8px 28px rgba(24, 53, 46, 0.12), 0 2px 6px rgba(24, 53, 46, 0.06);
+    --rl-shadow-dialog: 0 18px 48px rgba(24, 53, 46, 0.16), 0 4px 12px rgba(24, 53, 46, 0.08);
+    --rl-font-sans: "SF Pro Display", "Segoe UI Variable", "Avenir Next", "PingFang SC", system-ui, sans-serif;
+    --rl-radius-sm: 8px;
+    --rl-radius-md: 12px;
+    --rl-radius-lg: 18px;
+    --rl-radius-xl: 24px;
+    --rl-z-dock: 40;
+    --rl-z-popover: 60;
+    --rl-z-dialog: 80;
+    --rl-z-toast: 100;
+    font-family: var(--rl-font-sans);
+    letter-spacing: -0.01em;
+}
+
+.app-root--dark {
+    --rl-canvas: #171d19;
+    --rl-surface: #202a24;
+    --rl-surface-subtle: #29372f;
+    --rl-surface-raised: #29372f;
+    --rl-ink: #eef4ee;
+    --rl-ink-soft: #c2d0c6;
+    --rl-ink-muted: #93a69a;
+    --rl-brand: #b8d9c2;
+    --rl-brand-hover: #d3ead8;
+    --rl-brand-pressed: #8fbea0;
+    --rl-accent: #e4b07a;
+    --rl-accent-soft: #45372a;
+    --rl-success: #86d4a4;
+    --rl-success-soft: #233d2d;
+    --rl-warning: #f0bc83;
+    --rl-warning-soft: #463325;
+    --rl-danger: #f0a094;
+    --rl-danger-soft: #452b2b;
+    --rl-line: rgba(238, 244, 238, 0.15);
+    --rl-line-strong: rgba(238, 244, 238, 0.24);
+    --rl-focus-ring: 0 0 0 3px rgba(228, 176, 122, 0.24);
+    --rl-edge-light: rgba(255, 255, 255, 0.08);
+    --rl-edge-deep: rgba(0, 0, 0, 0.34);
+    --rl-shadow: 0 1px 2px rgba(0, 0, 0, 0.2), 0 14px 34px rgba(0, 0, 0, 0.22);
+    --rl-shadow-lift: 0 2px 4px rgba(0, 0, 0, 0.24), 0 24px 56px rgba(0, 0, 0, 0.3);
+    --rl-shadow-popover: 0 10px 30px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(0, 0, 0, 0.18);
+    --rl-shadow-dialog: 0 20px 52px rgba(0, 0, 0, 0.42), 0 4px 14px rgba(0, 0, 0, 0.22);
+}
+
+.app-root button,
+.app-root input,
+.app-root textarea {
+    font-family: inherit;
+}
+
+.app-root button:focus-visible,
+.app-root input:focus-visible,
+.app-root textarea:focus-visible {
+    outline: 2px solid var(--rl-focus, var(--rl-accent));
+    outline-offset: 3px;
+    box-shadow: var(--rl-focus-ring);
+}
+
+.app-error {
+    border-color: color-mix(in srgb, var(--rl-danger) 38%, var(--rl-line));
+    border-radius: var(--rl-radius-md);
+    background: var(--rl-danger-soft);
+    box-shadow: var(--rl-shadow);
+}
+
+.confirm-layer,
+.file-view__prompt-layer {
+    background: color-mix(in srgb, var(--rl-ink) 34%, transparent);
+}
+
+.confirm-dialog,
+.file-view__prompt {
+    border-color: var(--rl-line);
+    border-radius: var(--rl-radius-xl);
+    box-shadow: var(--rl-shadow-dialog);
+}
+
+.confirm-dialog__button--danger {
+    background: var(--rl-danger);
+    border-color: var(--rl-danger);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+    }
+}
+
+
+/* -------------------------------------------------------------------------
+   Moss refinement: control alignment and scrollbar hierarchy
+   ------------------------------------------------------------------------- */
+.app-root button,
+.app-root input,
+.app-root textarea {
+    box-sizing: border-box;
+}
+
+.app-root button {
+    vertical-align: middle;
+}
+
+/* Keep secondary scroll containers quiet; the content remains scrollable. */
+.app-root .stats-view__list,
+.app-root .arc-gallery__face--back,
+.app-root .edit-board {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(24, 53, 46, 0.18) transparent;
+}
+
+.app-root .stats-view__list::-webkit-scrollbar,
+.app-root .arc-gallery__face--back::-webkit-scrollbar,
+.app-root .edit-board::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.app-root .stats-view__list::-webkit-scrollbar-track,
+.app-root .arc-gallery__face--back::-webkit-scrollbar-track,
+.app-root .edit-board::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.app-root .stats-view__list::-webkit-scrollbar-thumb,
+.app-root .arc-gallery__face--back::-webkit-scrollbar-thumb,
+.app-root .edit-board::-webkit-scrollbar-thumb {
+    border: 2px solid transparent;
+    border-radius: 999px;
+    background: rgba(24, 53, 46, 0.18);
+    background-clip: padding-box;
+}
+
+.app-root .stats-view__list::-webkit-scrollbar-thumb:hover,
+.app-root .arc-gallery__face--back::-webkit-scrollbar-thumb:hover,
+.app-root .edit-board::-webkit-scrollbar-thumb:hover {
+    background: rgba(24, 53, 46, 0.30);
+    background-clip: padding-box;
+}
+
+.app-root--dark .stats-view__list,
+.app-root--dark .arc-gallery__face--back,
+.app-root--dark .edit-board {
+    scrollbar-color: rgba(238, 244, 238, 0.24) transparent;
+}
+
+.app-root--dark .stats-view__list::-webkit-scrollbar-thumb,
+.app-root--dark .arc-gallery__face--back::-webkit-scrollbar-thumb,
+.app-root--dark .edit-board::-webkit-scrollbar-thumb {
+    background: rgba(238, 244, 238, 0.24);
+    background-clip: padding-box;
+}

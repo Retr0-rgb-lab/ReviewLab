@@ -60,3 +60,34 @@
         transition: none;
     }
 }
+
+
+/* Moss refinement: the narrow rail uses the same fixed control cell rhythm. */
+.favorites-rail {
+    width: 76px;
+    padding-block: 20px;
+    gap: 18px;
+    border-left-color: var(--rl-line);
+}
+
+.favorites-rail__button {
+    width: 48px;
+    min-height: 48px;
+    box-sizing: border-box;
+    padding: 7px 0;
+    line-height: 1;
+}
+
+.favorites-rail__button svg {
+    display: block;
+}
+
+@media (max-width: 720px) {
+    .favorites-rail {
+        width: 58px;
+    }
+
+    .favorites-rail__button {
+        width: 44px;
+    }
+}

@@ -104,3 +104,52 @@
         transition: none;
     }
 }
+
+
+/* Moss prototype: the dial reads like a metric, not a control knob. */
+.mastery-dial__button {
+    border-radius: var(--rl-radius-lg);
+    background: transparent;
+    transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1), background-color 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.mastery-dial__button:hover {
+    background: var(--rl-surface-subtle);
+    transform: translateY(-1px);
+}
+
+.mastery-dial__label {
+    color: var(--rl-ink-soft);
+    font-size: 10px;
+    font-weight: 650;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.mastery-dial__label--master {
+    color: var(--rl-success);
+}
+
+.mastery-dial__label--not-mastered {
+    color: var(--rl-danger);
+}
+
+.mastery-dial__count {
+    font-size: 24px;
+    font-weight: 650;
+    letter-spacing: -0.04em;
+}
+
+.mastery-dial__count--master {
+    color: var(--rl-success);
+}
+
+.mastery-dial__count--not-mastered {
+    color: var(--rl-danger);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .mastery-dial__button {
+        transition: none;
+    }
+}

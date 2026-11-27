@@ -306,3 +306,308 @@
         animation: none;
     }
 }
+
+
+/* -------------------------------------------------------------------------
+   Moss prototype: statistics as a calm decision surface
+   ------------------------------------------------------------------------- */
+.stats-view {
+    min-height: calc(100dvh - 48px);
+    gap: 28px;
+}
+
+.stats-view__topbar {
+    align-items: flex-start;
+    gap: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--rl-line);
+}
+
+.stats-view__search {
+    min-height: 40px;
+    padding: 0 15px;
+    border-color: var(--rl-line);
+    border-radius: var(--rl-radius-md);
+    background: var(--rl-surface);
+    color: var(--rl-brand);
+    box-shadow: 0 1px 1px rgba(24, 53, 46, 0.03);
+    transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1), background-color 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.stats-view__search:hover {
+    background: var(--rl-surface-subtle);
+    transform: translateY(-1px);
+}
+
+.stats-view__title {
+    padding-left: 14px;
+    border-left: 3px solid var(--rl-brand);
+    font-family: var(--rl-font-sans);
+    font-size: clamp(28px, 3vw, 40px);
+    line-height: 1.04;
+    letter-spacing: -0.04em;
+    color: var(--rl-brand);
+}
+
+.stats-view__crumb-link:hover,
+.stats-view__crumb--current {
+    color: var(--rl-brand);
+}
+
+.stats-view__counts {
+    padding: 4px 9px;
+    border: 1px solid var(--rl-line);
+    border-radius: 999px;
+    background: var(--rl-surface-subtle);
+}
+
+.stats-view__theme {
+    width: 54px;
+    height: 30px;
+    border-color: var(--rl-line);
+    background: var(--rl-surface);
+}
+
+.stats-view__knob {
+    background: var(--rl-brand);
+}
+
+.stats-view__board,
+.stats-view__board--both {
+    grid-template-columns: minmax(220px, 0.72fr) minmax(0, 1fr) minmax(0, 1fr);
+    gap: 20px;
+    align-items: stretch;
+}
+
+.stats-view__dial {
+    min-height: 410px;
+    padding: 30px 20px;
+    border: 1px solid var(--rl-line);
+    border-radius: var(--rl-radius-xl);
+    background: var(--rl-surface);
+    box-shadow: var(--rl-shadow);
+}
+
+.stats-view__rate {
+    justify-content: center;
+    gap: 6px;
+    text-align: center;
+}
+
+.stats-view__rate-value {
+    display: block;
+    width: 100%;
+    font-size: clamp(1.8rem, 3.1vw, 2.8rem);
+    font-weight: 650;
+    letter-spacing: -0.055em;
+    color: var(--rl-brand);
+}
+
+.stats-view__rate-detail {
+    width: 100%;
+    color: var(--rl-ink-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.stats-view__column {
+    border-color: var(--rl-line);
+    border-radius: var(--rl-radius-xl);
+    background: var(--rl-surface);
+    box-shadow: var(--rl-shadow);
+}
+
+.stats-view__column-title {
+    padding: 18px 20px 14px;
+    border-bottom-color: var(--rl-line);
+    font-size: 0.78rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--rl-ink-soft);
+}
+
+.stats-view__list {
+    padding: 6px;
+}
+
+.stats-view__row--enter {
+    animation: stats-row-in-moss 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: calc(var(--row-i, 0) * 36ms);
+}
+
+@keyframes stats-row-in-moss {
+    from {
+        opacity: 0;
+        transform: translate3d(0, 4px, 0);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+.stats-view__unit {
+    gap: 6px;
+    padding: 15px 16px;
+    border-bottom-color: var(--rl-line);
+    border-radius: var(--rl-radius-md);
+}
+
+.stats-view__unit:hover,
+.stats-view__unit:focus-visible {
+    background: var(--rl-surface-subtle);
+}
+
+.stats-view__question {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    font-size: 1rem;
+    font-weight: 650;
+    line-height: 1.3;
+    color: var(--rl-brand);
+}
+
+.stats-view__answer {
+    display: -webkit-box;
+    white-space: normal;
+    overflow: hidden;
+    text-overflow: clip;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    color: var(--rl-ink-soft);
+}
+
+.stats-view__empty {
+    margin: 0;
+    padding: 48px;
+    border: 1px dashed var(--rl-line-strong);
+    border-radius: var(--rl-radius-xl);
+    color: var(--rl-ink-soft);
+}
+
+@media (max-width: 1100px) {
+    .stats-view__board,
+    .stats-view__board--both {
+        grid-template-columns: minmax(190px, 0.65fr) minmax(0, 1fr) minmax(0, 1fr);
+        gap: 14px;
+    }
+
+    .stats-view__dial {
+        padding-inline: 12px;
+    }
+}
+
+@media (max-width: 900px) {
+    .stats-view__board,
+    .stats-view__board--both {
+        grid-template-columns: minmax(180px, 0.7fr) minmax(0, 1fr);
+    }
+
+    .stats-view__dial {
+        min-height: 360px;
+    }
+}
+
+@media (max-width: 720px) {
+    .stats-view {
+        min-height: 0;
+        gap: 20px;
+    }
+
+    .stats-view__topbar {
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .stats-view__heading {
+        order: 3;
+        flex-basis: 100%;
+    }
+
+    .stats-view__board,
+    .stats-view__board--both {
+        grid-template-columns: 1fr;
+    }
+
+    .stats-view__dial {
+        min-height: 300px;
+        padding: 24px 14px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .stats-view__search,
+    .stats-view__knob,
+    .stats-view__ring {
+        transition: none;
+    }
+
+    .stats-view__row--enter {
+        animation: none;
+    }
+}
+
+
+/* Moss refinement: stats controls and rows share the same optical baseline. */
+.stats-view__topbar {
+    align-items: flex-start;
+}
+
+.stats-view__search,
+.stats-view__theme {
+    height: 40px;
+    min-height: 40px;
+    box-sizing: border-box;
+    align-self: flex-start;
+}
+
+.stats-view__theme {
+    width: 58px;
+    border-radius: 999px;
+}
+
+.stats-view__knob {
+    top: 7px;
+    left: 7px;
+    width: 24px;
+    height: 24px;
+}
+
+.stats-view__knob--dark {
+    transform: translateX(20px);
+}
+
+.stats-view__crumbs {
+    min-height: 24px;
+    align-items: center;
+}
+
+.stats-view__counts {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    box-sizing: border-box;
+    line-height: 1;
+}
+
+.stats-view__unit {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    min-height: 72px;
+    box-sizing: border-box;
+    line-height: 1.35;
+}
+
+.stats-view__question,
+.stats-view__answer {
+    width: 100%;
+}
+
+@media (max-width: 720px) {
+    .stats-view__search,
+    .stats-view__theme {
+        height: 40px;
+        min-height: 40px;
+    }
+}
